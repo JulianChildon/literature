@@ -110,6 +110,9 @@
         const HelpCircle = (props) => (
             <IconBase {...props}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></IconBase>
         );
+        const ChevronDown = (props) => (
+            <IconBase {...props}><polyline points="6 9 12 15 18 9"/></IconBase>
+        );
 
         // --- DATA SOURCE ---
         const APP_DATA = {
@@ -338,32 +341,33 @@
                 title: "The Scarlet Letter (Excerpt)",
                 segments: [
                 { en: "The young woman was tall, with a figure of perfect elegance on a large scale.", cn: "那年轻女人身材高大，体态优美，落落大方。" },
-                { en: "She had dark and abundant hair... and a face which... had the impressiveness belonging to a marked brow and deep black eyes.", cn: "她那一头乌黑浓密的秀发... 她的脸庞，除了因五官端正、气色红润而美丽动人外，那一双浓密的眉毛和深邃的黑眼睛，更赋予她一种令人过目不忘的英气。" },
-                { en: "She was ladylike, too, after the manner of the feminine gentility of those days...", cn: "她还表现出那个时代女性温文尔雅的气派..." },
-                { en: "And never had Hester Prynne appeared more ladylike... than as she issued from the prison.", cn: "当海斯特·白兰走出监狱时，从未像现在这样符合“淑女”一词的古老定义。" },
-                { en: "Those who had before known her... were astonished... to perceive how her beauty shone out...", cn: "那些以前认识她的人们... 惊讶甚至震惊地发现，她的美反而焕发出光彩..." },
-                { en: "Her attire... seemed to express the attitude of her spirit, the desperate recklessness of her mood...", cn: "她的服装... 似乎表达了她内心的态度，即一种绝望而鲁莽的心情。" },
-                { en: "But the point which drew all eyes... was that SCARLET LETTER...", cn: "但最引人注目... 的是她胸前那枚红字..." },
-                { en: "It had the effect of a spell, taking her out of the ordinary relations with humanity...", cn: "它产生了一种咒语般的效果，使她脱离了与人类的正常联系..." }
+                { en: "She had dark and abundant hair, so glossy that it threw off the sunshine with a gleam, and a face which, besides being beautiful from regularity of feature and richness of complexion, had the impressiveness belonging to a marked brow and deep black eyes.", cn: "她那一头乌黑浓密的秀发，光亮得足以反射出闪烁的阳光；她的脸庞，除了因五官端正、气色红润而美丽动人外，那一双浓密的眉毛和深邃的黑眼睛，更赋予她一种令人过目不忘的英气。" },
+                { en: "She was ladylike, too, after the manner of the feminine gentility of those days; characterised by a certain state and dignity, rather than by the delicate, evanescent, and indescribable grace, which is now recognised as its indication.", cn: "她还表现出那个时代女性温文尔雅的气派；这种气派的特点是某种庄重与尊严，而非现代所公认的那种纤弱、飘逸且难以言表的优雅。" },
+                { en: "And never had Hester Prynne appeared more ladylike, in the antique interpretation of the term, than as she issued from the prison.", cn: "当海斯特·白兰走出监狱时，从未像现在这样符合“淑女”一词的古老定义。" },
+                { en: "Those who had before known her, and had expected to behold her dimmed and obscured by a disastrous cloud, were astonished, and even startled, to perceive how her beauty shone out, and made a halo of the misfortune and ignominy in which she was enveloped.", cn: "那些以前认识她、本以为会看到她被灾难的阴云所笼罩而变得灰暗憔悴的人们，惊讶甚至震惊地发现，她的美反而焕发出光彩，使她身陷其中的不幸与耻辱反倒成了一道光环。" },
+                { en: "It may be true, that, to a sensitive observer, there was something exquisitely painful in it.", cn: "也许在敏感的观察者看来，这种美中带有一种极其痛苦的意味。" },
+                { en: "Her attire, which, indeed, she had wrought for the occasion, in prison, and had modelled much after her own fancy, seemed to express the attitude of her spirit, the desperate recklessness of her mood, by its wild and picturesque peculiarity.", cn: "她的服装确实是在狱中为这一场合亲手缝制的，很大程度上是随心所欲设计的，其狂野而独特的风格似乎表达了她内心的态度，即一种绝望而鲁莽的心情。" },
+                { en: "But the point which drew all eyes, and, as it were, transfigured the wearer—so that both men and women, who had been familiarly acquainted with Hester Prynne, were now impressed as if they beheld her for the first time—was that SCARLET LETTER, so fantastically embroidered and illuminated upon her bosom.", cn: "但最引人注目、并仿佛使她整个人变了样——以至于熟悉海斯特·白兰的男女老少，此刻都仿佛第一次见到她一样——的是她胸前那枚红字，刺绣得如此精美瑰奇，在胸前闪闪发光。" },
+                { en: "It had the effect of a spell, taking her out of the ordinary relations with humanity, and enclosing her in a sphere by herself.", cn: "它产生了一种咒语般的效果，使她脱离了与人类的正常联系，将她封闭在一个属于她自己的领域里。" }
                 ]
             },
             {
                 title: "The Story of an Hour (Excerpt)",
                 segments: [
                 { en: "There stood, facing the open window, a comfortable, roomy armchair.", cn: "面对着敞开的窗户，放着一把宽大舒适的扶手椅。" },
-                { en: "Into this she sank, pressed down by a physical exhaustion that haunted her body...", cn: "她瘫坐在椅子里，身体被一种疲惫感压垮了..." },
+                { en: "Into this she sank, pressed down by a physical exhaustion that haunted her body and seemed to reach into her soul.", cn: "她瘫坐在椅子里，身体被一种疲惫感压垮了，这种疲惫萦绕着她的肉体，似乎还触及到了她的灵魂。" },
                 { en: "She could see in the open square before her house the tops of trees that were all aquiver with the new spring life.", cn: "透过屋前开阔的广场，她可以看到树梢因为春天的新生而微微颤动。" },
                 { en: "The delicious breath of rain was in the air.", cn: "空气中弥漫着雨后沁人心脾的气息。" },
                 { en: "In the street below a peddler was crying his wares.", cn: "楼下的街道上，一个小贩正在大声叫卖他的商品。" },
-                { en: "The notes of a distant song which someone was singing reached her faintly...", cn: "远处有人歌唱的旋律隐约传到她耳边..." },
-                { en: "There were patches of blue sky showing here and there through the clouds...", cn: "在她窗口正对着的西方，云层汇聚堆叠，其间不时露出一抹抹蔚蓝的天空。" }
+                { en: "The notes of a distant song which someone was singing reached her faintly, and countless sparrows were twittering in the leaves.", cn: "远处有人歌唱的旋律隐约传到她耳边，无数的麻雀在树叶间啁啾鸣叫。" },
+                { en: "There were patches of blue sky showing here and there through the clouds that had met and piled one above the other in the west facing her window.", cn: "在她窗口正对着的西方，云层汇聚堆叠，其间不时露出一抹抹蔚蓝的天空。" }
                 ]
             },
             {
                 title: "Rip Van Winkle (Excerpt)",
                 segments: [
-                { en: "On the other side he looked down into a deep mountain glen, wild, lonely, and shagged...", cn: "在山的另一边，他俯瞰着一个深邃的山谷，那里荒凉、孤独、草木杂乱..." },
-                { en: "For some time Rip lay musing on this scene; evening was gradually advancing...", cn: "瑞普躺在那里对着这番景象沉思了许久；暮色渐渐降临..." }
+                { en: "On the other side he looked down into a deep mountain glen, wild, lonely, and shagged, the bottom filled with fragments from the impending cliffs, and scarcely lighted by the reflected rays of the setting sun.", cn: "在山的另一边，他俯瞰着一个深邃的山谷，那里荒凉、孤独、草木杂乱，谷底堆满了从险峻悬崖上滚落的碎石，落日的余晖几乎无法映照进这片幽暗之地。" },
+                { en: "For some time Rip lay musing on this scene; evening was gradually advancing; the mountains began to throw their long blue shadows over the valleys; he saw that it would be dark long before he could reach the village; and he heaved a heavy sigh when he thought of encountering the terrors of Dame Van Winkle.", cn: "瑞普躺在那里对着这番景象沉思了许久；暮色渐渐降临，群山开始在峡谷中投下长长的蓝色阴影；他意识到，还没等他赶回村子天就要黑透了，一想到回家又要面对可怕的范·温克尔太太，他不禁沉沉地叹了口气。" }
                 ]
             }
             ],
@@ -725,6 +729,16 @@
         // 3. Reference Section
         const ReferenceSection = () => {
             const [searchTerm, setSearchTerm] = useState("");
+            // Add toggle state for sections
+            const [sectionsOpen, setSectionsOpen] = useState({
+                notes: true,
+                definitions: true,
+                translations: true
+            });
+
+            const toggleSection = (section) => {
+                setSectionsOpen(prev => ({ ...prev, [section]: !prev[section] }));
+            };
 
             const filteredDefinitions = APP_DATA.definitions.filter(d => 
             d.term.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -755,117 +769,141 @@
 
                 {/* New Section: Study Notes & Analysis */}
                 <div className="space-y-6">
-                <div className="flex items-center space-x-2 text-indigo-900 border-b-2 border-indigo-100 pb-2">
-                    <GraduationCap size={28} className="text-indigo-600" />
-                    <h2 className="text-2xl font-bold">重点作品赏析与备考 (Analysis & Exam Notes)</h2>
-                </div>
-
-                <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-6">
-                    {filteredNotes.map((note, idx) => (
-                    <div key={idx} className={`p-6 rounded-xl border transition-all hover:shadow-lg flex flex-col ${note.isHighlight ? 'bg-indigo-50 border-indigo-200 ring-1 ring-indigo-200 col-span-full' : 'bg-white border-gray-100 shadow-sm'}`}>
-                        <div className="flex justify-between items-start mb-3">
-                        <h3 className="font-bold text-lg text-indigo-800">{note.title}</h3>
-                        {note.isHighlight && <Star size={20} className="text-yellow-500 fill-current" />}
-                        </div>
-                        <p className="text-sm text-gray-500 font-medium mb-4 flex items-center">
-                        <span className="w-2 h-2 rounded-full bg-indigo-400 mr-2"></span>
-                        {note.author}
-                        </p>
-                        
-                        {/* Tags */}
-                        {note.tags && (
-                            <div className="flex flex-wrap gap-2 mb-4">
-                            {note.tags.map((tag, tIdx) => (
-                                <span key={tIdx} className="px-2 py-1 bg-white border border-gray-200 rounded text-xs text-gray-600 font-medium">
-                                {tag}
-                                </span>
-                            ))}
-                            </div>
-                        )}
-
-                        {/* Notes Content */}
-                        <ul className="space-y-2 mb-6 flex-grow">
-                            {note.content.map((line, lIdx) => (
-                            <li key={lIdx} className="text-sm text-gray-700 leading-relaxed flex items-start">
-                                <span className="mr-2 text-indigo-400 mt-1">•</span>
-                                {line}
-                            </li>
-                            ))}
-                        </ul>
-
-                        {/* New QA Section */}
-                        {note.qa && (
-                            <div className="mt-4 pt-4 border-t border-dashed border-gray-200">
-                            <h4 className="flex items-center text-sm font-bold text-gray-800 mb-3">
-                                <HelpCircle size={16} className="mr-2 text-indigo-500" />
-                                Key Questions & Answers
-                            </h4>
-                            <div className="space-y-3">
-                                {note.qa.map((qaItem, qIdx) => (
-                                <div key={qIdx} className="bg-gray-50 p-3 rounded-lg border border-gray-100">
-                                    <p className="text-sm font-semibold text-indigo-900 mb-1">Q: {qaItem.q}</p>
-                                    <p className="text-sm text-gray-600 pl-4 border-l-2 border-green-400">A: {qaItem.a}</p>
-                                </div>
-                                ))}
-                            </div>
-                            </div>
-                        )}
+                <div 
+                    className="flex items-center justify-between text-indigo-900 border-b-2 border-indigo-100 pb-2 cursor-pointer hover:bg-indigo-50/50 transition-colors rounded-t-lg p-2"
+                    onClick={() => toggleSection('notes')}
+                >
+                    <div className="flex items-center space-x-2">
+                        <GraduationCap size={28} className="text-indigo-600" />
+                        <h2 className="text-2xl font-bold">重点作品赏析与备考 (Analysis & Exam Notes)</h2>
                     </div>
-                    ))}
+                    <ChevronDown size={24} className={`text-indigo-400 transform transition-transform duration-300 ${sectionsOpen.notes ? 'rotate-180' : ''}`} />
                 </div>
+
+                {sectionsOpen.notes && (
+                    <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-6 animate-fadeIn">
+                        {filteredNotes.map((note, idx) => (
+                        <div key={idx} className={`p-6 rounded-xl border transition-all hover:shadow-lg flex flex-col ${note.isHighlight ? 'bg-indigo-50 border-indigo-200 ring-1 ring-indigo-200 col-span-full' : 'bg-white border-gray-100 shadow-sm'}`}>
+                            <div className="flex justify-between items-start mb-3">
+                            <h3 className="font-bold text-lg text-indigo-800">{note.title}</h3>
+                            {note.isHighlight && <Star size={20} className="text-yellow-500 fill-current" />}
+                            </div>
+                            <p className="text-sm text-gray-500 font-medium mb-4 flex items-center">
+                            <span className="w-2 h-2 rounded-full bg-indigo-400 mr-2"></span>
+                            {note.author}
+                            </p>
+                            
+                            {/* Tags */}
+                            {note.tags && (
+                                <div className="flex flex-wrap gap-2 mb-4">
+                                {note.tags.map((tag, tIdx) => (
+                                    <span key={tIdx} className="px-2 py-1 bg-white border border-gray-200 rounded text-xs text-gray-600 font-medium">
+                                    {tag}
+                                    </span>
+                                ))}
+                                </div>
+                            )}
+
+                            {/* Notes Content */}
+                            <ul className="space-y-2 mb-6 flex-grow">
+                                {note.content.map((line, lIdx) => (
+                                <li key={lIdx} className="text-sm text-gray-700 leading-relaxed flex items-start">
+                                    <span className="mr-2 text-indigo-400 mt-1">•</span>
+                                    {line}
+                                </li>
+                                ))}
+                            </ul>
+
+                            {/* New QA Section */}
+                            {note.qa && (
+                                <div className="mt-4 pt-4 border-t border-dashed border-gray-200">
+                                <h4 className="flex items-center text-sm font-bold text-gray-800 mb-3">
+                                    <HelpCircle size={16} className="mr-2 text-indigo-500" />
+                                    Key Questions & Answers
+                                </h4>
+                                <div className="space-y-3">
+                                    {note.qa.map((qaItem, qIdx) => (
+                                    <div key={qIdx} className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                        <p className="text-sm font-semibold text-indigo-900 mb-1">Q: {qaItem.q}</p>
+                                        <p className="text-sm text-gray-600 pl-4 border-l-2 border-green-400">A: {qaItem.a}</p>
+                                    </div>
+                                    ))}
+                                </div>
+                                </div>
+                            )}
+                        </div>
+                        ))}
+                    </div>
+                )}
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-8">
                 {/* Definitions Column */}
                 <div className="space-y-6">
-                    <div className="flex items-center space-x-2 text-indigo-900 border-b border-indigo-200 pb-2">
-                    <BookOpen size={24} />
-                    <h2 className="text-xl font-bold">名词解释 (Definitions)</h2>
+                    <div 
+                        className="flex items-center justify-between text-indigo-900 border-b border-indigo-200 pb-2 cursor-pointer hover:bg-indigo-50/50 transition-colors rounded-t-lg p-2"
+                        onClick={() => toggleSection('definitions')}
+                    >
+                        <div className="flex items-center space-x-2">
+                            <BookOpen size={24} />
+                            <h2 className="text-xl font-bold">名词解释 (Definitions)</h2>
+                        </div>
+                        <ChevronDown size={24} className={`text-indigo-400 transform transition-transform duration-300 ${sectionsOpen.definitions ? 'rotate-180' : ''}`} />
                     </div>
                     
-                    <div className="space-y-4">
-                    {filteredDefinitions.length > 0 ? filteredDefinitions.map((item, idx) => (
-                        <div key={idx} className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow group">
-                        <h3 className="font-bold text-lg text-indigo-700 mb-2 group-hover:text-indigo-600">{item.term}</h3>
-                        <p className="text-gray-600 leading-relaxed text-sm">{item.definition}</p>
+                    {sectionsOpen.definitions && (
+                        <div className="space-y-4 animate-fadeIn">
+                        {filteredDefinitions.length > 0 ? filteredDefinitions.map((item, idx) => (
+                            <div key={idx} className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow group">
+                            <h3 className="font-bold text-lg text-indigo-700 mb-2 group-hover:text-indigo-600">{item.term}</h3>
+                            <p className="text-gray-600 leading-relaxed text-sm">{item.definition}</p>
+                            </div>
+                        )) : (
+                            <p className="text-gray-400 italic text-center py-8">No terms found matching your search.</p>
+                        )}
                         </div>
-                    )) : (
-                        <p className="text-gray-400 italic text-center py-8">No terms found matching your search.</p>
                     )}
-                    </div>
                 </div>
 
                 {/* Translation Column */}
                 <div className="space-y-6">
-                    <div className="flex items-center space-x-2 text-indigo-900 border-b border-indigo-200 pb-2">
-                    <FileText size={24} />
-                    <h2 className="text-xl font-bold">翻译对照 (Translations)</h2>
+                    <div 
+                        className="flex items-center justify-between text-indigo-900 border-b border-indigo-200 pb-2 cursor-pointer hover:bg-indigo-50/50 transition-colors rounded-t-lg p-2"
+                        onClick={() => toggleSection('translations')}
+                    >
+                        <div className="flex items-center space-x-2">
+                            <FileText size={24} />
+                            <h2 className="text-xl font-bold">翻译对照 (Translations)</h2>
+                        </div>
+                        <ChevronDown size={24} className={`text-indigo-400 transform transition-transform duration-300 ${sectionsOpen.translations ? 'rotate-180' : ''}`} />
                     </div>
 
-                    <div className="space-y-4">
-                    {APP_DATA.translations.map((text, tIdx) => (
-                        <div key={tIdx} className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden group hover:shadow-md transition-shadow">
-                        <div className="bg-gray-50 px-5 py-3 border-b border-gray-100 font-bold text-gray-700 flex justify-between items-center">
-                            {text.title}
-                            <Lightbulb size={16} className="text-gray-400 group-hover:text-indigo-500 transition-colors" />
+                    {sectionsOpen.translations && (
+                        <div className="space-y-4 animate-fadeIn">
+                        {APP_DATA.translations.map((text, tIdx) => (
+                            <div key={tIdx} className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden group hover:shadow-md transition-shadow">
+                            <div className="bg-gray-50 px-5 py-3 border-b border-gray-100 font-bold text-gray-700 flex justify-between items-center">
+                                {text.title}
+                                <Lightbulb size={16} className="text-gray-400 group-hover:text-indigo-500 transition-colors" />
+                            </div>
+                            <div className="divide-y divide-gray-100">
+                                {text.segments.map((seg, sIdx) => {
+                                // Simple filter for translation content
+                                if (searchTerm && !seg.en.toLowerCase().includes(searchTerm.toLowerCase()) && !seg.cn.includes(searchTerm)) {
+                                    return null;
+                                }
+                                return (
+                                    <div key={sIdx} className="p-4 hover:bg-indigo-50/30 transition-colors">
+                                    <p className="text-gray-800 font-serif mb-2 leading-relaxed">{seg.en}</p>
+                                    <p className="text-gray-600 text-sm border-l-4 border-indigo-300 pl-3 leading-relaxed bg-gray-50/50 py-1">{seg.cn}</p>
+                                    </div>
+                                );
+                                })}
+                            </div>
+                            </div>
+                        ))}
                         </div>
-                        <div className="divide-y divide-gray-100">
-                            {text.segments.map((seg, sIdx) => {
-                            // Simple filter for translation content
-                            if (searchTerm && !seg.en.toLowerCase().includes(searchTerm.toLowerCase()) && !seg.cn.includes(searchTerm)) {
-                                return null;
-                            }
-                            return (
-                                <div key={sIdx} className="p-4 hover:bg-indigo-50/30 transition-colors">
-                                <p className="text-gray-800 font-serif mb-2 leading-relaxed">{seg.en}</p>
-                                <p className="text-gray-600 text-sm border-l-4 border-indigo-300 pl-3 leading-relaxed bg-gray-50/50 py-1">{seg.cn}</p>
-                                </div>
-                            );
-                            })}
-                        </div>
-                        </div>
-                    ))}
-                    </div>
+                    )}
                 </div>
                 </div>
             </div>
