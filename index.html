@@ -3,935 +3,1037 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AmLit Master - American Literature Study Tool</title>
-    
-    <!-- React & ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    
-    <!-- Babel for JSX -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <title>英汉对比与翻译复习库</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Lucide Icons (Vanilla JS version which exposes global 'lucide') -->
+    <script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js"></script>
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;700&display=swap');
-
         body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background-color: #f8fafc;
         }
-
-        .font-serif {
-            font-family: 'Noto Serif SC', serif;
-        }
-
-        /* Custom Scrollbar hiding */
-        .scrollbar-hide::-webkit-scrollbar {
+        /* Hide scrollbar for clean look */
+        .hide-scrollbar::-webkit-scrollbar {
             display: none;
         }
-        .scrollbar-hide {
+        .hide-scrollbar {
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
-
-        /* Animations */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fadeIn {
-            animation: fadeIn 0.5s ease-out forwards;
-        }
-
-        @keyframes bounceShort {
-            0%, 100% { transform: translate(-50%, 0); }
-            50% { transform: translate(-50%, -5px); }
-        }
-        .animate-bounce-short {
-            animation: bounceShort 1s infinite;
-        }
     </style>
 </head>
-<body class="bg-slate-50 text-gray-900">
+<body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useMemo, useEffect } = React;
 
-        // --- ICON COMPONENTS (Inline SVGs to replace lucide-react) ---
-        const IconBase = ({ size = 24, className = "", children }) => (
-            <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                width={size} 
-                height={size} 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                className={className}
-            >
-                {children}
-            </svg>
-        );
-
-        const BookOpen = (props) => (
-            <IconBase {...props}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></IconBase>
-        );
-        const CheckCircle = (props) => (
-            <IconBase {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></IconBase>
-        );
-        const XCircle = (props) => (
-            <IconBase {...props}><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></IconBase>
-        );
-        const Search = (props) => (
-            <IconBase {...props}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></IconBase>
-        );
-        const FileText = (props) => (
-            <IconBase {...props}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></IconBase>
-        );
-        const PenTool = (props) => (
-            <IconBase {...props}><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></IconBase>
-        );
-        const RotateCcw = (props) => (
-            <IconBase {...props}><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></IconBase>
-        );
-        const Lightbulb = (props) => (
-            <IconBase {...props}><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 16.5 8c0-2.3-1.5-4.5-4.5-4.5S7.5 5.7 7.5 8c0 1.56.5 2.5 2 4.5A5 5 0 0 1 15.09 14z"/></IconBase>
-        );
-        const Star = (props) => (
-            <IconBase {...props}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></IconBase>
-        );
-        const GraduationCap = (props) => (
-            <IconBase {...props}><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></IconBase>
-        );
-        const HelpCircle = (props) => (
-            <IconBase {...props}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></IconBase>
-        );
-        const ChevronDown = (props) => (
-            <IconBase {...props}><polyline points="6 9 12 15 18 9"/></IconBase>
-        );
-
-        // --- DATA SOURCE ---
-        const APP_DATA = {
-            chapters: [
-            {
-                id: "IX",
-                title: "Chapter IX: Romanticism & Transcendentalism",
-                fillInBlanks: [
-                {
-                    id: "ix-f1",
-                    question: "Washington Irving, along with ______ was among the first American writers to earn the international fame in Europe.",
-                    answers: ["James Fenimore Cooper"],
-                    parts: ["Washington Irving, along with ", " was among the first American writers to earn the international fame in Europe."]
-                },
-                {
-                    id: "ix-f2",
-                    question: "The American Romantic Movement gave rise to ______, which was a religious and philosophical movement.",
-                    answers: ["transcendentalism"],
-                    parts: ["The American Romantic Movement gave rise to ", ", which was a religious and philosophical movement."]
-                },
-                {
-                    id: "ix-f3",
-                    question: "Transcendentalists were strong believers in the power of the individual. They stressed the role of ______ and the individual’s ______, and exalted feeling over ______.",
-                    answers: ["divinity", "intuition", "reason"],
-                    parts: ["Transcendentalists were strong believers in the power of the individual. They stressed the role of ", " and the individual’s ", ", and exalted feeling over ", "."]
-                },
-                {
-                    id: "ix-f4",
-                    question: "The representative writers of American Romanticism are Washington Irving, Alan Poe, ______ etc.",
-                    answers: ["Nathaniel Hawthorne"],
-                    parts: ["The representative writers of American Romanticism are Washington Irving, Alan Poe, ", " etc."]
-                },
-                {
-                    id: "ix-f5",
-                    question: "The two monumental works of Transcendentalism are ______'s ______ and ______'s ______.",
-                    answers: ["Emerson", "Nature", "Thoreau", "Walden"],
-                    parts: ["The two monumental works of Transcendentalism are ", "'s ", " and ", "'s ", "."]
+        // --- 图标适配层 (Fix for ReferenceError) ---
+        // 既然浏览器环境的 lucide 全局变量不包含 React 组件，我们需要手动创建
+        const createIcon = (iconName) => {
+            return (props) => {
+                // 检查 lucide 是否加载
+                if (typeof lucide === 'undefined' || !lucide.icons || !lucide.icons[iconName]) {
+                    console.warn(`Icon ${iconName} not found or lucide not loaded.`);
+                    return <span className="text-xs">{iconName}</span>;
                 }
-                ],
-                multipleChoice: [
-                {
-                    id: "ix-m1",
-                    question: "Who was the principal author of the Declaration of Independence?",
-                    options: ["Benjamin Franklin", "Thomas Jefferson", "George Washington", "Washington Irving"],
-                    correct: 1
-                },
-                {
-                    id: "ix-m2",
-                    question: "To Helen was written by Poe from the inspiration by the beauty of ________.",
-                    options: ["Greek beauty Helen", "mother of Poe’s classmate", "water nymph Naiads", "soulful beauty Psyche"],
-                    correct: 1 
-                },
-                {
-                    id: "ix-m3",
-                    question: "The masters or fathers of American short stories are following writers except ________.",
-                    options: ["Washington Irving", "Edgar Allan Poe", "Nathaniel Hawthorne", "H. W. Longfellow"],
-                    correct: 3
-                },
-                {
-                    id: "ix-m4",
-                    question: "________ is regarded as the “father of American literature”?",
-                    options: ["Nathaniel Hawthorne", "James Fenimore Cooper", "Thomas Jefferson", "Washington Irving"],
-                    correct: 3
-                },
-                {
-                    id: "ix-m5",
-                    question: "What does the ship symbolize in the poem O Captain! My Captain!?",
-                    options: ["The Civil War", "The War of Independence", "The United States", "The UK"],
-                    correct: 2
-                },
-                {
-                    id: "ix-m6",
-                    question: "The scarlet letter “A” on Hester’s dress is a symbol, originally a mark of first letter of ________.",
-                    options: ["adulterer", "angel", "ability", "America"],
-                    correct: 0
-                }
-                ]
-            },
-            {
-                id: "X",
-                title: "Chapter X: Realism & Naturalism",
-                fillInBlanks: [
-                {
-                    id: "x-f1",
-                    question: "Theodore Dreiser was a master of ______ and ______ of modern American novels.",
-                    answers: ["naturalism", "realism"],
-                    parts: ["Theodore Dreiser was a master of ", " and ", " of modern American novels."]
-                },
-                {
-                    id: "x-f2",
-                    question: "______ was Henry James’ favorite theme in his works.",
-                    answers: ["International theme"],
-                    parts: ["", " was Henry James’ favorite theme in his works."]
-                },
-                {
-                    id: "x-f3",
-                    question: "After the Civil War, the ______ and ______ flourished, giving rise to affluent mid-class.",
-                    answers: ["industrialization", "mechanization"],
-                    parts: ["After the Civil War, the ", " and ", " flourished, giving rise to affluent mid-class."]
-                },
-                {
-                    id: "x-f4",
-                    question: "Mark Twain was a great literary giant lauded for his ______ and ______.",
-                    answers: ["satire", "wit"],
-                    parts: ["Mark Twain was a great literary giant lauded for his ", " and ", "."]
-                },
-                {
-                    id: "x-f5",
-                    question: "Kate Chopin is now considered by some to have been a forerunner of the ______ authors of the 20th century.",
-                    answers: ["feminist"],
-                    parts: ["Kate Chopin is now considered by some to have been a forerunner of the ", " authors of the 20th century."]
-                }
-                ],
-                multipleChoice: [
-                {
-                    id: "x-m1",
-                    question: "Who does not belong to the novelists of Naturalism in the following list?",
-                    options: ["Mark Twain", "Theodore Dreiser", "Stephen Crane", "Jack London"],
-                    correct: 0
-                },
-                {
-                    id: "x-m2",
-                    question: "Theodore Dreiser believed that ________.",
-                    options: ["men can control their fate", "man’s fate is controlled by impersonal forces", "men can change their fate by their personal effort", "man’s fate is not predetermined"],
-                    correct: 1
-                },
-                {
-                    id: "x-m3",
-                    question: "Which of the following is not the work written by Mark Twain?",
-                    options: ["The Adventure of Tom Sawyer", "An American Tragedy", "The Man That Corrupted Hadleyburg", "The Gilded Age"],
-                    correct: 1
-                },
-                {
-                    id: "x-m4",
-                    question: "Kate Chopin’s The Awakening received negative press at her time because ________.",
-                    options: ["the story is obscure", "the plot is too complicated", "her writing is terrible", "its theme is far ahead of its time"],
-                    correct: 3
-                },
-                {
-                    id: "x-m5",
-                    question: "Whom did William Faulkner regard as “the father of American literature”?",
-                    options: ["Henry James", "Samuel Langhorne Clemens", "Theodore Dreiser", "Jack London"],
-                    correct: 1
-                }
-                ]
-            },
-            {
-                id: "XI",
-                title: "Chapter XI: Modernism & The Lost Generation",
-                fillInBlanks: [
-                {
-                    id: "xi-f1",
-                    question: "American writers after World War I self-consciously acknowledged that they were the “______”, devoid of faith and alienated from the Western civilization.",
-                    answers: ["Lost Generation"],
-                    parts: ["American writers after World War I self-consciously acknowledged that they were the “", "”, devoid of faith and alienated from the Western civilization."]
-                },
-                {
-                    id: "xi-f2",
-                    question: "______’s drama marks the coming of the age of American drama.",
-                    answers: ["Eugene O’Neil"],
-                    parts: ["", "’s drama marks the coming of the age of American drama."]
-                }
-                ],
-                multipleChoice: [
-                {
-                    id: "xi-m1",
-                    question: "Which of the following figures does not belong to the Lost Generation?",
-                    options: ["Ezra Pound", "William Carlos Williams", "Ernest Hemingway", "Theodore Dreiser"],
-                    correct: 3
-                },
-                {
-                    id: "xi-m2",
-                    question: "The following writers were awarded Nobel Prize in Literature except for ________.",
-                    options: ["William Faulkner", "F. Scott Fitzgerald", "John Steinbeck", "Ernest Hemingway"],
-                    correct: 1
-                },
-                {
-                    id: "xi-m3",
-                    question: "In Faulkner’s novel The Sound and the Fury, he used a typical technique called ________.",
-                    options: ["stream of consciousness", "imagism", "symbolism", "naturalism"],
-                    correct: 0
-                },
-                {
-                    id: "xi-m4",
-                    question: "What does the jar in Anecdote of the Jar symbolize?",
-                    options: ["Ground and hill", "Artistic imagination/Order", "Disordered wilderness", "Bird or bush"],
-                    correct: 1
-                },
-                {
-                    id: "xi-m5",
-                    question: "The two striking contrast words in The Red Wheelbarrow are ________.",
-                    options: ["red and white", "water and rain", "rain and barrow", "glazed and red"],
-                    correct: 0
-                }
-                ]
-            }
-            ],
-            definitions: [
-            {
-                term: "Romanticism",
-                definition: "A reaction against Neoclassicism. This early 19th-century movement elevated the individual, the passions, and the inner life. It stressed strong emotion, imagination, freedom from classical correctness in art forms, and rebellion against social conventions."
-            },
-            {
-                term: "American Realism",
-                definition: "A style in art, music and literature that depicted contemporary social realities and the lives and everyday activities of ordinary people. The movement began in literature in the mid-19th century; American realist works attempted to define what was real."
-            },
-            {
-                term: "Modernism",
-                definition: "An international cultural movement after World War I, expressing disillusionment with tradition and interest in new technologies and visions. Writers sought to find new ways of expression and a break from the literary tradition of the 19th century."
-            },
-            {
-                term: "American Renaissance",
-                definition: "A period of American architecture and the arts from 1876 to 1917, characterized by renewed national self-confidence and a feeling that the United States was the heir to Greek democracy, Roman law, and Renaissance humanism."
-            },
-            {
-                term: "Free verse",
-                definition: "Poetry that is written without proper rules about form, rhyme, rhythm, meter, etc."
-            },
-            {
-                term: "Jazz Age literature",
-                definition: "Popularized by F. Scott Fitzgerald, it captures the hedonism, disillusionment, and cultural explosion of the 1920s, focusing on 'Lost Generation' expatriates, flapper culture, and the Harlem Renaissance."
-            }
-            ],
-            translations: [
-            {
-                title: "The Scarlet Letter (Excerpt)",
-                segments: [
-                { en: "The young woman was tall, with a figure of perfect elegance on a large scale.", cn: "那年轻女人身材高大，体态优美，落落大方。" },
-                { en: "She had dark and abundant hair, so glossy that it threw off the sunshine with a gleam, and a face which, besides being beautiful from regularity of feature and richness of complexion, had the impressiveness belonging to a marked brow and deep black eyes.", cn: "她那一头乌黑浓密的秀发，光亮得足以反射出闪烁的阳光；她的脸庞，除了因五官端正、气色红润而美丽动人外，那一双浓密的眉毛和深邃的黑眼睛，更赋予她一种令人过目不忘的英气。" },
-                { en: "She was ladylike, too, after the manner of the feminine gentility of those days; characterised by a certain state and dignity, rather than by the delicate, evanescent, and indescribable grace, which is now recognised as its indication.", cn: "她还表现出那个时代女性温文尔雅的气派；这种气派的特点是某种庄重与尊严，而非现代所公认的那种纤弱、飘逸且难以言表的优雅。" },
-                { en: "And never had Hester Prynne appeared more ladylike, in the antique interpretation of the term, than as she issued from the prison.", cn: "当海斯特·白兰走出监狱时，从未像现在这样符合“淑女”一词的古老定义。" },
-                { en: "Those who had before known her, and had expected to behold her dimmed and obscured by a disastrous cloud, were astonished, and even startled, to perceive how her beauty shone out, and made a halo of the misfortune and ignominy in which she was enveloped.", cn: "那些以前认识她、本以为会看到她被灾难的阴云所笼罩而变得灰暗憔悴的人们，惊讶甚至震惊地发现，她的美反而焕发出光彩，使她身陷其中的不幸与耻辱反倒成了一道光环。" },
-                { en: "It may be true, that, to a sensitive observer, there was something exquisitely painful in it.", cn: "也许在敏感的观察者看来，这种美中带有一种极其痛苦的意味。" },
-                { en: "Her attire, which, indeed, she had wrought for the occasion, in prison, and had modelled much after her own fancy, seemed to express the attitude of her spirit, the desperate recklessness of her mood, by its wild and picturesque peculiarity.", cn: "她的服装确实是在狱中为这一场合亲手缝制的，很大程度上是随心所欲设计的，其狂野而独特的风格似乎表达了她内心的态度，即一种绝望而鲁莽的心情。" },
-                { en: "But the point which drew all eyes, and, as it were, transfigured the wearer—so that both men and women, who had been familiarly acquainted with Hester Prynne, were now impressed as if they beheld her for the first time—was that SCARLET LETTER, so fantastically embroidered and illuminated upon her bosom.", cn: "但最引人注目、并仿佛使她整个人变了样——以至于熟悉海斯特·白兰的男女老少，此刻都仿佛第一次见到她一样——的是她胸前那枚红字，刺绣得如此精美瑰奇，在胸前闪闪发光。" },
-                { en: "It had the effect of a spell, taking her out of the ordinary relations with humanity, and enclosing her in a sphere by herself.", cn: "它产生了一种咒语般的效果，使她脱离了与人类的正常联系，将她封闭在一个属于她自己的领域里。" }
-                ]
-            },
-            {
-                title: "The Story of an Hour (Excerpt)",
-                segments: [
-                { en: "There stood, facing the open window, a comfortable, roomy armchair.", cn: "面对着敞开的窗户，放着一把宽大舒适的扶手椅。" },
-                { en: "Into this she sank, pressed down by a physical exhaustion that haunted her body and seemed to reach into her soul.", cn: "她瘫坐在椅子里，身体被一种疲惫感压垮了，这种疲惫萦绕着她的肉体，似乎还触及到了她的灵魂。" },
-                { en: "She could see in the open square before her house the tops of trees that were all aquiver with the new spring life.", cn: "透过屋前开阔的广场，她可以看到树梢因为春天的新生而微微颤动。" },
-                { en: "The delicious breath of rain was in the air.", cn: "空气中弥漫着雨后沁人心脾的气息。" },
-                { en: "In the street below a peddler was crying his wares.", cn: "楼下的街道上，一个小贩正在大声叫卖他的商品。" },
-                { en: "The notes of a distant song which someone was singing reached her faintly, and countless sparrows were twittering in the leaves.", cn: "远处有人歌唱的旋律隐约传到她耳边，无数的麻雀在树叶间啁啾鸣叫。" },
-                { en: "There were patches of blue sky showing here and there through the clouds that had met and piled one above the other in the west facing her window.", cn: "在她窗口正对着的西方，云层汇聚堆叠，其间不时露出一抹抹蔚蓝的天空。" }
-                ]
-            },
-            {
-                title: "Rip Van Winkle (Excerpt)",
-                segments: [
-                { en: "On the other side he looked down into a deep mountain glen, wild, lonely, and shagged, the bottom filled with fragments from the impending cliffs, and scarcely lighted by the reflected rays of the setting sun.", cn: "在山的另一边，他俯瞰着一个深邃的山谷，那里荒凉、孤独、草木杂乱，谷底堆满了从险峻悬崖上滚落的碎石，落日的余晖几乎无法映照进这片幽暗之地。" },
-                { en: "For some time Rip lay musing on this scene; evening was gradually advancing; the mountains began to throw their long blue shadows over the valleys; he saw that it would be dark long before he could reach the village; and he heaved a heavy sigh when he thought of encountering the terrors of Dame Van Winkle.", cn: "瑞普躺在那里对着这番景象沉思了许久；暮色渐渐降临，群山开始在峡谷中投下长长的蓝色阴影；他意识到，还没等他赶回村子天就要黑透了，一想到回家又要面对可怕的范·温克尔太太，他不禁沉沉地叹了口气。" }
-                ]
-            }
-            ],
-            studyNotes: [
-            {
-                title: "The Road Not Taken (《未选择的路》)",
-                author: "Robert Frost (罗伯特·弗罗斯特)",
-                tags: ["Modern Poetry", "Existentialism"],
-                content: [
-                "地位：美国国民诗人 Robert Frost 的名诗。",
-                "考点预测：极大概率考查原文填空或者主题分析。",
-                "核心主题：人生的选择 (Choices)、存在主义色彩 (Existentialism)。",
-                "备考重点：理解诗歌中关于选择的隐喻，以及对“未选择的路”的思考。"
-                ],
-                qa: [
-                { q: "What does the yellow wood mean in the first line?", a: "It symbolizes autumn, representing a season of change or a mature stage in life where choices must be made." },
-                { q: "What is the speaker sorry for?", a: "He is sorry that he cannot travel both roads simultaneously while being one traveler." },
-                { q: "What might the roads stand for in the poem?", a: "The roads stand for the different choices, paths, or directions one can take in life." },
-                { q: "Why does the second road have the better claim?", a: "Because it was grassy and wanted wear, meaning it was less traveled and perhaps more inviting." },
-                { q: "Why should the speaker tell this with a “sigh”?", a: "The sigh suggests a mix of nostalgia, regret for the path not taken, or simple acceptance of the finality of his choice." },
-                { q: "Does the speaker think he makes a wrong choice?", a: "It is ambiguous; he simply notes it 'made all the difference,' implying the choice was significant regardless of whether it was right or wrong." },
-                { q: "What would the poet like to convey to us?", a: "That life is full of difficult choices that define our future, and we can never truly know where the other path might have led." }
-                ]
-            },
-            {
-                title: "Rip Van Winkle (《瑞普·凡·温克尔》)",
-                author: "Washington Irving (华盛顿·欧文)",
-                tags: ["Short Story", "Romanticism", "Father of American Lit"],
-                content: [
-                "作者简介：华盛顿·欧文 (Washington Irving)，被称为“美国文学之父”。",
-                "文体特点 (Style) - 必考词汇：",
-                "1. Simplicity (简洁)",
-                "2. Lucidity (清晰) *笔记强调：曾误写为tudidity后改正，务必拼写正确。",
-                "3. Innovative (创新)",
-                "板块归属：早期短篇小说（浪漫主义先驱），考查美国本土文学的兴起。"
-                ],
-                qa: [
-                { q: "Why would Rip Van Winkle like to go out?", a: "To escape his wife's sharp tongue and the labor of his farm." },
-                { q: "What do you think of the dog, Wolf?", a: "Wolf was Rip's sole domestic adherent, also henpecked and terrified of Dame Van Winkle." },
-                { q: "What did Rip hear and who did he meet in the mountain?", a: "He heard his name called and met a short, square-built old fellow with thick bushy hair and a grizzled beard." },
-                { q: "What happened to Rip in the mountain then?", a: "He drank the liquor offered by the strangers and fell into a deep sleep for twenty years." },
-                { q: "What did Rip see on waking?", a: "He found his gun rusted, his dog gone, and his joints stiff." },
-                { q: "What did Rip see when he came home?", a: "He saw his house gone to decay, the village grown larger, and the Union Hotel replacing the old inn." }
-                ]
-            },
-            {
-                title: "Sister Carrie (《嘉莉妹妹》)",
-                author: "Theodore Dreiser (西奥多·德莱塞)",
-                tags: ["Novel", "Naturalism", "American Dream"],
-                content: [
-                "流派：自然主义 (Naturalism) 的代表作。",
-                "记忆技巧：笔记中修正了 'Sister' 和 'Carrie'，考试时注意书名书写。",
-                "三要素记忆法：看到《嘉莉妹妹》 -> 必须反应出 'Dreiser' 和 'Naturalism'。",
-                "考点预测：环境决定论 (Environment determinism) 以及对美国梦的解构。"
-                ],
-                qa: [
-                { q: "How old was Sister Carrie when she first went to Chicago?", a: "She was eighteen years of age." },
-                { q: "Why did Carrie make her trip to Chicago?", a: "She was full of the illusions of ignorance and youth, seeking better fortune than her hometown offered." },
-                { q: "What is your impression on Sister Carrie?", a: "She represents the 'waif amid forces,' naive, ambitious, yet vulnerable to the overwhelming power of the city." },
-                { q: "What is the writing style that the author uses in this part?", a: "The style is realistic and naturalistic, focusing on detailed observation of environment and social forces." },
-                { q: "What ways would young girls find when they left hometown for big city?", a: "They could either fall into degradation or rise by virtue/labor, but often found a middle ground of struggle." },
-                { q: "What was the society like according to this part?", a: "It was a cold, industrial capitalist society where the individual was insignificant against the vast social machine." }
-                ]
-            },
-            {
-                title: "The Great Gatsby (《了不起的盖茨比》)",
-                author: "F. Scott Fitzgerald (F. 斯科特·菲茨杰拉德)",
-                tags: ["Novel", "Jazz Age", "Modernism"],
-                content: [
-                "板块归属：爵士时代 (Jazz Age) / 现代主义。",
-                "核心考点：Theme (主题)。笔记特别标注。",
-                "主题关键词：美国梦的破灭 (Disillusionment of American Dream)、爵士时代的空虚。",
-                "备考方向：通常是论述题重点，需大段背诵相关主题分析。"
-                ],
-                qa: [
-                { q: "What is the color of Nick's clothes when he goes to the party?", a: "He is dressed in white flannels." },
-                { q: "Why do some of the guests go to the party uninvitedly?", a: "They are attracted by the spectacle, the free hospitality, and the moths-to-a-flame allure of wealth." },
-                { q: "What is the implication of the description of the party?", a: "It implies the superficiality, moral decay, and hedonistic excess of the Jazz Age society." },
-                { q: "What is the implication of the extravagant parties?", a: "They reflect Gatsby's desperate, ostentatious attempt to fill a void and attract Daisy's attention." },
-                { q: "What is the aim of Gatsby holding the parties?", a: "He holds them in the singular hope that Daisy might one day wander in." },
-                { q: "What is the relationship between Nick and Gatsby? Do you think they had known each other before?", a: "They are neighbors and war veterans; they served in the same division but had not met before that summer." }
-                ]
-            },
-            {
-                title: "★ 考试策略与备考总纲",
-                author: "Exam Strategy",
-                tags: ["Strategy", "Must Read"],
-                isHighlight: true,
-                content: [
-                "1. 得“大题”者得天下：名词解释 (30分) + 简答/论述 (约30分) > 60%。必须背诵大段文学术语定义和作品分析。",
-                "2. 死记硬背关键词：如华盛顿·欧文的 Simplicity, Lucidity。精准使用文学批评术语得分很高。",
-                "3. 三要素记忆法：应对客观题的万能公式 -> “书名 + 作者 + 思想流派”。",
-                "4. 复习重点：笔记重点标记了拼写修改痕迹，考试中绝对不能拼错人名和术语。"
-                ]
-            }
-            ]
-        };
 
-        // --- COMPONENTS ---
-
-        // 1. Navigation Header
-        const Header = ({ currentTab, setTab }) => (
-            <header className="bg-indigo-700 text-white shadow-lg sticky top-0 z-50">
-            <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center">
-                <div className="flex items-center space-x-2 mb-4 md:mb-0">
-                <BookOpen size={28} />
-                <h1 className="text-2xl font-bold tracking-tight">AmLit Master</h1>
-                </div>
-                <nav className="flex space-x-2 bg-indigo-800 p-1 rounded-lg">
-                <button
-                    onClick={() => setTab('quiz')}
-                    className={`flex items-center px-4 py-2 rounded-md transition-all ${currentTab === 'quiz' ? 'bg-white text-indigo-900 shadow-sm font-medium transform scale-105' : 'text-indigo-200 hover:text-white hover:bg-indigo-600'}`}
-                >
-                    <PenTool size={18} className="mr-2" />
-                    练习题库
-                </button>
-                <button
-                    onClick={() => setTab('reference')}
-                    className={`flex items-center px-4 py-2 rounded-md transition-all ${currentTab === 'reference' ? 'bg-white text-indigo-900 shadow-sm font-medium transform scale-105' : 'text-indigo-200 hover:text-white hover:bg-indigo-600'}`}
-                >
-                    <FileText size={18} className="mr-2" />
-                    资料库
-                </button>
-                </nav>
-            </div>
-            </header>
-        );
-
-        // 2. Quiz Section
-        const QuizSection = () => {
-            const [activeChapterIndex, setActiveChapterIndex] = useState(0);
-            const [answers, setAnswers] = useState({});
-            const [results, setResults] = useState({});
-            const [showResults, setShowResults] = useState(false);
-
-            const activeChapter = APP_DATA.chapters[activeChapterIndex];
-
-            // Reset when chapter changes
-            useEffect(() => {
-            setAnswers({});
-            setResults({});
-            setShowResults(false);
-            }, [activeChapterIndex]);
-
-            const handleFillChange = (qId, partIndex, value) => {
-            setAnswers(prev => ({
-                ...prev,
-                [`${qId}-${partIndex}`]: value
-            }));
-            };
-
-            const handleMultiChoiceChange = (qId, optionIndex) => {
-            setAnswers(prev => ({
-                ...prev,
-                [qId]: optionIndex
-            }));
-            };
-
-            const checkAnswers = () => {
-            const newResults = {};
-            let correctCount = 0;
-            let totalCount = 0;
-
-            // Check Fill in Blanks
-            activeChapter.fillInBlanks.forEach(q => {
-                q.answers.forEach((ans, idx) => {
-                totalCount++;
-                const userAns = (answers[`${q.id}-${idx}`] || "").trim().toLowerCase();
-                const correctAns = ans.trim().toLowerCase();
-                // Simple heuristic: correct if contains the key word roughly
-                const isCorrect = userAns === correctAns || (userAns.length > 3 && correctAns.includes(userAns)); 
-                newResults[`${q.id}-${idx}`] = isCorrect;
-                if(isCorrect) correctCount++;
-                });
-            });
-
-            // Check Multiple Choice
-            activeChapter.multipleChoice.forEach(q => {
-                totalCount++;
-                const userAns = answers[q.id];
-                const isCorrect = userAns === q.correct;
-                newResults[q.id] = isCorrect;
-                if(isCorrect) correctCount++;
-            });
-
-            setResults(newResults);
-            setShowResults(true);
-            };
-
-            const resetQuiz = () => {
-            setAnswers({});
-            setResults({});
-            setShowResults(false);
-            };
-
-            return (
-            <div className="max-w-4xl mx-auto p-4 animate-fadeIn">
-                {/* Chapter Selection */}
-                <div className="flex overflow-x-auto space-x-2 mb-6 pb-2 border-b border-gray-200 scrollbar-hide">
-                {APP_DATA.chapters.map((chap, idx) => (
-                    <button
-                    key={chap.id}
-                    onClick={() => setActiveChapterIndex(idx)}
-                    className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                        activeChapterIndex === idx
-                        ? 'bg-indigo-600 text-white shadow-md transform scale-105'
-                        : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
-                    }`}
+                const iconData = lucide.icons[iconName];
+                
+                return (
+                    <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        width={props.size || 24} 
+                        height={props.size || 24} 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        strokeWidth={props.strokeWidth || 2} 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        className={props.className || ""}
+                        {...props}
                     >
-                    {chap.title}
-                    </button>
-                ))}
-                </div>
-
-                <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-                <div className="p-6 bg-indigo-50 border-b border-indigo-100 flex justify-between items-center">
-                    <h2 className="text-xl font-bold text-indigo-900">{activeChapter.title}</h2>
-                    {showResults && (
-                    <span className={`text-sm font-bold px-4 py-1.5 rounded-full shadow-sm ${
-                        Object.values(results).filter(Boolean).length === Object.keys(results).length 
-                        ? 'bg-green-100 text-green-700' 
-                        : 'bg-indigo-100 text-indigo-700'
-                    }`}>
-                        Score: {Object.values(results).filter(Boolean).length} / {Object.keys(results).length}
-                    </span>
-                    )}
-                </div>
-
-                <div className="p-6 space-y-10">
-                    
-                    {/* Section I: Fill in the Blanks */}
-                    <section>
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                        <span className="bg-indigo-100 text-indigo-700 w-8 h-8 rounded-full flex items-center justify-center mr-3 text-sm font-bold">I</span>
-                        Fill in the Blanks
-                    </h3>
-                    <div className="space-y-6">
-                        {activeChapter.fillInBlanks.map((q, qIdx) => (
-                        <div key={q.id} className="text-gray-700 leading-loose bg-gray-50 p-5 rounded-xl border border-gray-100">
-                            <span className="font-bold text-gray-400 mr-2">{qIdx + 1}.</span>
-                            {q.parts.map((part, pIdx) => (
-                            <React.Fragment key={pIdx}>
-                                <span>{part}</span>
-                                {pIdx < q.parts.length - 1 && (
-                                <span className="inline-block mx-1 relative">
-                                    <input
-                                    type="text"
-                                    value={answers[`${q.id}-${pIdx}`] || ''}
-                                    onChange={(e) => handleFillChange(q.id, pIdx, e.target.value)}
-                                    disabled={showResults}
-                                    className={`border-b-2 px-2 py-0.5 outline-none w-36 text-center font-medium transition-all rounded-t-md ${
-                                        showResults
-                                        ? results[`${q.id}-${pIdx}`]
-                                            ? 'border-green-500 text-green-700 bg-green-50'
-                                            : 'border-red-500 text-red-700 bg-red-50'
-                                        : 'border-gray-300 focus:border-indigo-500 focus:bg-indigo-50 bg-white'
-                                    }`}
-                                    />
-                                    {showResults && !results[`${q.id}-${pIdx}`] && (
-                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 text-xs bg-red-600 text-white px-3 py-1.5 rounded-md shadow-lg z-10 whitespace-nowrap animate-bounce-short">
-                                        <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-red-600 rotate-45"></div>
-                                        Ans: {q.answers[pIdx]}
-                                    </div>
-                                    )}
-                                </span>
-                                )}
-                            </React.Fragment>
-                            ))}
-                        </div>
-                        ))}
-                    </div>
-                    </section>
-
-                    {/* Section II: Multiple Choice */}
-                    <section>
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                        <span className="bg-indigo-100 text-indigo-700 w-8 h-8 rounded-full flex items-center justify-center mr-3 text-sm font-bold">II</span>
-                        Multiple Choice
-                    </h3>
-                    <div className="space-y-4">
-                        {activeChapter.multipleChoice.map((q, qIdx) => {
-                        const isCorrect = showResults && results[q.id];
-                        const isWrong = showResults && !isCorrect;
-                        return (
-                            <div key={q.id} className={`p-5 rounded-xl border transition-all ${isCorrect ? 'border-green-200 bg-green-50/50' : isWrong ? 'border-red-200 bg-red-50/50' : 'border-gray-100 bg-gray-50 hover:bg-gray-100'}`}>
-                            <p className="font-medium text-gray-800 mb-4">
-                                <span className="mr-2 text-gray-400 font-bold">{qIdx + 1}.</span>
-                                {q.question}
-                            </p>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 ml-6">
-                                {q.options.map((opt, optIdx) => (
-                                <label 
-                                    key={optIdx} 
-                                    className={`flex items-center space-x-3 cursor-pointer p-3 rounded-lg border transition-all ${
-                                    showResults && q.correct === optIdx 
-                                        ? 'bg-green-100 border-green-300 ring-1 ring-green-300' 
-                                        : answers[q.id] === optIdx
-                                        ? 'bg-indigo-50 border-indigo-300 ring-1 ring-indigo-300'
-                                        : 'bg-white border-gray-200 hover:border-indigo-200'
-                                    }`}
-                                >
-                                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 ${
-                                    answers[q.id] === optIdx 
-                                        ? 'border-indigo-600' 
-                                        : 'border-gray-300'
-                                    }`}>
-                                    {answers[q.id] === optIdx && <div className="w-2.5 h-2.5 bg-indigo-600 rounded-full" />}
-                                    </div>
-                                    <input
-                                    type="radio"
-                                    name={q.id}
-                                    className="hidden"
-                                    value={optIdx}
-                                    checked={answers[q.id] === optIdx}
-                                    onChange={() => handleMultiChoiceChange(q.id, optIdx)}
-                                    disabled={showResults}
-                                    />
-                                    <span className={`text-sm ${
-                                    showResults && q.correct === optIdx ? 'font-bold text-green-800' : 'text-gray-700'
-                                    }`}>
-                                    <span className="font-mono mr-1 opacity-70">{String.fromCharCode(65 + optIdx)}.</span> {opt}
-                                    </span>
-                                    {showResults && q.correct === optIdx && <CheckCircle size={16} className="text-green-600 ml-auto" />}
-                                    {showResults && answers[q.id] === optIdx && q.correct !== optIdx && <XCircle size={16} className="text-red-600 ml-auto" />}
-                                </label>
-                                ))}
-                            </div>
-                            </div>
-                        );
+                        {iconData.map((entry, idx) => {
+                            const [tag, attrs] = entry;
+                            return React.createElement(tag, { ...attrs, key: idx });
                         })}
-                    </div>
-                    </section>
-
-                    {/* Actions */}
-                    <div className="flex justify-end space-x-4 pt-6 border-t border-gray-100">
-                    {showResults ? (
-                        <button
-                        onClick={resetQuiz}
-                        className="flex items-center px-6 py-2.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors shadow-md active:transform active:scale-95"
-                        >
-                        <RotateCcw size={18} className="mr-2" />
-                        重置试题 (Reset)
-                        </button>
-                    ) : (
-                        <button
-                        onClick={checkAnswers}
-                        className="flex items-center px-8 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-md font-semibold active:transform active:scale-95"
-                        >
-                        提交答案 (Submit)
-                        </button>
-                    )}
-                    </div>
-                </div>
-                </div>
-            </div>
-            );
+                    </svg>
+                );
+            };
         };
 
-        // 3. Reference Section
-        const ReferenceSection = () => {
-            const [searchTerm, setSearchTerm] = useState("");
-            // Add toggle state for sections
-            const [sectionsOpen, setSectionsOpen] = useState({
-                notes: true,
-                definitions: true,
-                translations: true
-            });
+        // 实例化所需的图标组件
+        const BookOpen = createIcon('BookOpen');
+        const Scale = createIcon('Scale');
+        const Languages = createIcon('Languages');
+        const Quote = createIcon('Quote');
+        const Search = createIcon('Search');
+        const ChevronRight = createIcon('ChevronRight');
+        const ChevronDown = createIcon('ChevronDown');
+        const CheckCircle = createIcon('CheckCircle');
+        const Eye = createIcon('Eye');
+        const EyeOff = createIcon('EyeOff');
+        const Book = createIcon('Book');
+        const Highlighter = createIcon('Highlighter');
+        const Filter = createIcon('Filter');
 
-            const toggleSection = (section) => {
-                setSectionsOpen(prev => ({ ...prev, [section]: !prev[section] }));
-            };
+        // --- 数据源 ---
+        const DATA = {
+          features: [
+            {
+              id: 1,
+              pair: "综合语 vs. 分析语",
+              enTerm: "Synthetic vs. Analytic",
+              english: {
+                trait: "Synthetic (综合语)",
+                desc: "频繁使用屈折变化(inflection)来表达语法关系。",
+                keywords: ["Inflection", "S-V Concord", "Morphology"]
+              },
+              chinese: {
+                trait: "Analytic (分析语)",
+                desc: "依靠词序(word order)和虚词(function words)表达语法关系，而非词形变化。",
+                keywords: ["Word Order", "Function Words", "No Inflection"]
+              },
+              summary: "英语是综合-分析语，汉语是典型的分析语。"
+            },
+            {
+              id: 2,
+              pair: "刚性 vs. 柔性",
+              enTerm: "Rigid vs. Supple",
+              english: {
+                trait: "Rigid (刚性)",
+                desc: "受主谓一致(S-V concord)严厉管辖，句法结构严谨，形式标记明显。",
+                keywords: ["S-V Concord", "Formal Markers", "Structure"]
+              },
+              chinese: {
+                trait: "Supple (柔性)",
+                desc: "不受主谓一致束缚，主谓结构灵活，重意念连贯(semantic coherence)。",
+                keywords: ["Flexible", "Semantic Coherence", "Run-on sentences"]
+              },
+              summary: "英语重形式接应，汉语重意念连贯。"
+            },
+            {
+              id: 3,
+              pair: "形合 vs. 意合",
+              enTerm: "Hypotactic vs. Paratactic",
+              english: {
+                trait: "Hypotactic (形合)",
+                desc: "使用连接词(connectives)显性展示从属关系，注重显性接应(overt cohesion)。",
+                keywords: ["Connectives", "Subordination", "Overt Cohesion"]
+              },
+              chinese: {
+                trait: "Paratactic (意合)",
+                desc: "不使用连接词，靠词序和逻辑排列分句，注重隐性连贯(covert coherence)。",
+                keywords: ["Context", "Logical Sequence", "Covert Coherence"]
+              },
+              summary: "英语多用从句和连词，汉语多用流水句和短句。"
+            },
+            {
+              id: 4,
+              pair: "繁复 vs. 简短",
+              enTerm: "Complex vs. Simplex",
+              english: {
+                trait: "Complex (繁复)",
+                desc: "采用“楼房建筑法”(Architecture style)，句子呈树状结构，平均句长较长。",
+                keywords: ["Architecture Style", "Left-branching", "Subordination"]
+              },
+              chinese: {
+                trait: "Simplex (简短)",
+                desc: "采用“流水记事法”(Chronicle style)，句子呈竹节状，多用四字格、短句。",
+                keywords: ["Chronicle Style", "Right-branching", "Short Sentences"]
+              },
+              summary: "英语句首封闭、句尾开放；汉语句首开放、句尾收缩。"
+            },
+            {
+              id: 5,
+              pair: "物称 vs. 人称",
+              enTerm: "Impersonal vs. Personal",
+              english: {
+                trait: "Impersonal (物称)",
+                desc: "注重客体思维，常以无灵名词(inanimate nouns)作主语，语气客观冷静。",
+                keywords: ["Object-oriented", "Inanimate Subjects", "Abstract Nouns"]
+              },
+              chinese: {
+                trait: "Personal (人称)",
+                desc: "注重主体思维，常以人(Personal subjects)作主语，从自我出发叙述。",
+                keywords: ["Subject-oriented", "Personal Pronouns", "Active Voice"]
+              },
+              summary: "例：Anger choked his words (愤怒让他说不出话) vs 他气得说不出话。"
+            },
+            {
+              id: 6,
+              pair: "被动 vs. 主动",
+              enTerm: "Passive vs. Active",
+              english: {
+                trait: "Passive (被动)",
+                desc: "广泛使用被动语态，强调客观性或动作的承受者。",
+                keywords: ["Passive Voice", "Objectivity"]
+              },
+              chinese: {
+                trait: "Active (主动)",
+                desc: "多用主动语态，或通过“由、是…的”等句式表达被动意义。",
+                keywords: ["Active Voice", "Notional Passive"]
+              },
+              summary: "汉语经常将英语的被动句译为无主句或主动句。"
+            },
+            {
+              id: 7,
+              pair: "静态 vs. 动态",
+              enTerm: "Static vs. Dynamic",
+              english: {
+                trait: "Static (静态)",
+                desc: "多用名词(Nominalization)、介词和形容词，具有静态特征。",
+                keywords: ["Nominalization", "Prepositions", "Static"]
+              },
+              chinese: {
+                trait: "Dynamic (动态)",
+                desc: "多用动词、动词短语、连动句，具有动态特征。",
+                keywords: ["Verbs", "Verbal Phrases", "Dynamic"]
+              },
+              summary: "英语：Predominance of nouns; 汉语：Predominance of verbs."
+            },
+            {
+              id: 8,
+              pair: "抽象 vs. 具体",
+              enTerm: "Abstract vs. Concrete",
+              english: {
+                trait: "Abstract (抽象)",
+                desc: "倾向于抽象思维，名物化导致表达的抽象化和概括化。",
+                keywords: ["Abstraction", "Generalization"]
+              },
+              chinese: {
+                trait: "Concrete (具体)",
+                desc: "倾向于形象思维，用具体的词表达抽象概念，风格脚踏实地。",
+                keywords: ["Image Thinking", "Concrete", "Specific"]
+              },
+              summary: "翻译时常需将英语的抽象名词转化为汉语的具体动词或范畴词。"
+            },
+            {
+              id: 9,
+              pair: "间接 vs. 直接",
+              enTerm: "Indirect vs. Direct",
+              english: {
+                trait: "Indirect (间接)",
+                desc: "多用委婉语(Euphemism)、双重否定、迂回说法。",
+                keywords: ["Euphemism", "Litotes", "Understatement"]
+              },
+              chinese: {
+                trait: "Direct (直接)",
+                desc: "相对直接，但也讲究面子，但在修辞上不像英语那样依赖双重否定等手段。",
+                keywords: ["Directness", "Assertive"]
+              },
+              summary: "英语常用 Litotes (间接肯定) 如 'not bad'。"
+            },
+            {
+              id: "10",
+              pair: "替换 vs. 重复",
+              enTerm: "Substitutive vs. Repetitive",
+              english: {
+                trait: "Substitutive (替换)",
+                desc: "极力避免重复，使用代词(pronouns)、同义词(synonyms)进行替换。",
+                keywords: ["Substitution", "Pro-forms", "Variation"]
+              },
+              chinese: {
+                trait: "Repetitive (重复)",
+                desc: "修辞上喜爱重复，包括叠词、对偶、排比，以增强气势和节奏。",
+                keywords: ["Repetition", "Reduplication", "Parallelism"]
+              },
+              summary: "英语：He is a good singer. (他歌唱得好)"
+            }
+          ],
+          theories: [
+            {
+              title: "直译 vs. 意译",
+              enTitle: "Literal vs. Free Translation",
+              content: [
+                { label: "直译 (Literal)", desc: "既保持原文内容，又保持原文形式（结构、修辞）。如果原文形式是表达意义的一部分，应尽可能直译。" },
+                { label: "意译 (Free)", desc: "脱离原文结构束缚，只忠实于原文内容和意义。当通顺与形式矛盾时，优先保证通顺。" },
+                { label: "原则", desc: "把忠实于原文内容放在第一位，通顺的译文形式放在第二位，忠于原文形式放在第三位。" }
+              ]
+            },
+            {
+              title: "归化 vs. 异化",
+              enTitle: "Domestication vs. Foreignization",
+              content: [
+                { label: "归化 (Domestication)", desc: "以目标语读者为归宿。把源语本土化，采用读者习惯的表达方式。优点：易理解，可读性强。" },
+                { label: "异化 (Foreignization)", desc: "以源语文化为归宿。保留异国情调和语言特色，让读者向作者靠拢。优点：保存异域文化特征。" }
+              ]
+            },
+            {
+              title: "翻译的三重境界",
+              enTitle: "Three Levels of Resemblance",
+              content: [
+                { label: "形似 (Formal Resemblance)", desc: "最低层次。指译文与原文在形态、结构、排列、辞格等方面的相似。" },
+                { label: "意似 (Meaning Resemblance)", desc: "中间层次。指译文与原文在内容上相似（许渊冲观点）。" },
+                { label: "神似 (Spiritual Resemblance)", desc: "最高层次。摆脱形式束缚，在准确理解基础上传达原文的气韵、精神气质。" }
+              ]
+            }
+          ],
+          corpus: [
+            // --- 综合与文学描写 ---
+            {
+              id: "lit_1",
+              category: "文学描写",
+              title: "The Vacation (E. Bradbury)",
+              source: "E. Bradbury",
+              original: "It was a day as fresh as grass growing up and clouds going over and butterflies coming down can make it. It was a day compounded from silences of bee and flower and ocean and land...",
+              translations: [
+                { type: "直译参考", text: "这是一个清新的日子，就像草长起来，云走过去，蝴蝶下来一样..." },
+                { type: "四字格意译", text: "绿草萋萋，白云冉冉，彩蝶翩翩，这日子是如此清新可爱；蜜蜂无言，春花不语... (体现汉语四字格和节奏感)" },
+                { type: "DeepSeek", text: "那是一个无比清新的日子，草儿正生长，云儿正飘荡，蝶儿正轻飏。" }
+              ],
+              note: "分析点：英语的静态名词(silences)转化为汉语的动态动词(无言、不语)；逻辑上英语先结果后现象，汉语先现象后结果。"
+            },
+            {
+              id: "lit_2",
+              category: "文学描写",
+              title: "桃花源记 (文言英译)",
+              source: "陶渊明",
+              original: "晋太元中，武陵人捕鱼为业。缘溪行，忘路之远近。忽逢桃花林...",
+              translations: [
+                { type: "Giles", text: "Towards the close of the fourth century A.D., a certain fisherman of Wu-ling..." },
+                { type: "林语堂", text: "During the reign of Taiyuan of Chin, there was a fisherman of Wuling..." },
+                { type: "方重", text: "During the reign of Emperor Shao-Wu of Eastern Tsin there was once a native of Wuling..." }
+              ],
+              note: "对比点：历史朝代处理(具体年份 vs 音译)，主语补充(汉语意合省略主语，英语形合需补全主语)。"
+            },
+             {
+              id: "lit_3",
+              category: "文学描写",
+              title: "荷塘月色 (描写)",
+              source: "朱自清",
+              original: "月光如流水一般，静静地泄在这一片叶子和花上。薄薄的青雾浮起在荷塘里。",
+              translations: [
+                { type: "朱纯深", text: "The moon sheds her liquid light silently over the leaves and flowers... look as if they had just been bathed in milk..." },
+                { type: "David E. Pollard", text: "The moonbeams spilled placidly onto this expanse of leaves and flowers like living water..." }
+              ],
+              note: "静态与动态的转化，名词与动词的选用。"
+            },
 
-            const filteredDefinitions = APP_DATA.definitions.filter(d => 
-            d.term.toLowerCase().includes(searchTerm.toLowerCase()) || 
-            d.definition.toLowerCase().includes(searchTerm.toLowerCase())
-            );
+            // --- 静态 vs 动态 (Static vs Dynamic) ---
+            {
+              id: "sd_1",
+              category: "静态 vs 动态",
+              title: "名词 -> 动词 (Family)",
+              source: "PPT 例句",
+              original: "Our son has been a disappointment to us.",
+              translations: [
+                { type: "译文", text: "儿子让我们大失所望。" }
+              ],
+              note: "disappointment (名词) -> 大失所望 (动词短语)。英语名物化(Nominalization)特征。"
+            },
+            {
+              id: "sd_2",
+              category: "静态 vs 动态",
+              title: "名词 -> 动词 (Skill)",
+              source: "PPT 例句",
+              original: "His skill at games made him the admiration of his friends.",
+              translations: [
+                { type: "译文", text: "他善于运动，朋友们羡慕不已。" }
+              ],
+              note: "skill (名词) -> 善于 (动词); admiration (名词) -> 羡慕 (动词)。"
+            },
+            {
+              id: "sd_3",
+              category: "静态 vs 动态",
+              title: "名词 -> 动词 (Work)",
+              source: "PPT 例句",
+              original: "It was only my capacity for hard work that saved me from early dismissal.",
+              translations: [
+                { type: "译文", text: "要不是我能干重活，早就给辞退了。" }
+              ],
+              note: "capacity (名词) -> 能干 (动词)。"
+            },
+             {
+              id: "sd_4",
+              category: "静态 vs 动态",
+              title: "介词 -> 动词 (Tool)",
+              source: "PPT 例句",
+              original: "The computer is a far more careful inspector than humans.",
+              translations: [
+                { type: "译文", text: "计算机比人检查得更为仔细。" }
+              ],
+              note: "inspector (名词) -> 检查 (动词)。"
+            },
+            {
+              id: "sd_5",
+              category: "静态 vs 动态",
+              title: "汉译英：动态 -> 静态",
+              source: "PPT 例句",
+              original: "她越来越恨他了。",
+              translations: [
+                { type: "英语(静态)", text: "Her hatred for him grew more." },
+                { type: "英语(动态)", text: "She hated him more and more." }
+              ],
+              note: "中文多用动词，英文可用抽象名词 hatred 表达更正式/静态的效果。"
+            },
+            {
+              id: "sd_6",
+              category: "静态 vs 动态",
+              title: "汉译英：动态 -> 静态",
+              source: "PPT 例句",
+              original: "这次国际会议开得好。",
+              translations: [
+                { type: "英语(静态)", text: "The present international conference has been a success." },
+                { type: "英语(动态)", text: "The present international conference has been held well." }
+              ],
+              note: "开得好 -> a success (名词)。"
+            },
+             {
+              id: "sd_7",
+              category: "静态 vs 动态",
+              title: "Be动词 + 名词",
+              source: "PPT 例句",
+              original: "He is a good singer. / He is a big eater.",
+              translations: [
+                { type: "译文", text: "他歌唱得好。 / 他饭量大 (或贪吃)。" }
+              ],
+              note: "English prefers 'Be + Noun' (Static); Chinese prefers 'Verb + Compliment' (Dynamic)."
+            },
+            {
+              id: "sd_8",
+              category: "静态 vs 动态",
+              title: "Be动词 + 名词",
+              source: "PPT 例句",
+              original: "The wise man is always a good listener.",
+              translations: [
+                { type: "译文", text: "智者总善于倾听别人的意见。" }
+              ],
+              note: "listener -> 善于倾听。"
+            },
+            {
+              id: "sd_9",
+              category: "静态 vs 动态",
+              title: "介词短语",
+              source: "PPT 例句",
+              original: "Because of bad management, the company was in the red.",
+              translations: [
+                { type: "译文", text: "由于管理不善，公司出现亏损。" }
+              ],
+              note: "in the red (介词短语状态) -> 出现亏损 (动词短语)。"
+            },
+            {
+              id: "sd_10",
+              category: "静态 vs 动态",
+              title: "介词短语",
+              source: "PPT 例句",
+              original: "The performance is on.",
+              translations: [
+                { type: "译文", text: "演出开始了。" }
+              ],
+              note: "on (介词) -> 开始 (动词)。"
+            },
 
-            const filteredNotes = APP_DATA.studyNotes.filter(n =>
-            n.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            n.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            n.content.some(c => c.toLowerCase().includes(searchTerm.toLowerCase()))
-            );
+            // --- 物称 vs 人称 (Impersonal vs Personal) ---
+            {
+              id: "ip_1",
+              category: "物称 vs 人称",
+              title: "无灵主语 (Words)",
+              source: "PPT 例句",
+              original: "Words fail me!",
+              translations: [
+                { type: "物称直译", text: "语言辜负了我！(不自然)" },
+                { type: "人称转译", text: "我（惊得/吓得…）就是说不出话来！" }
+              ],
+              note: "英语常用无灵主语，汉语倾向于以'我'为主语。"
+            },
+            {
+              id: "ip_2",
+              category: "物称 vs 人称",
+              title: "无灵主语 (Anger)",
+              source: "PPT 例句",
+              original: "Anger choked his words.",
+              translations: [
+                { type: "人称转译", text: "他气得说不出话来。" },
+                { type: "参考", text: "愤怒使他无法开口。" }
+              ],
+              note: "Anger (物) -> 他 (人)。"
+            },
+            {
+              id: "ip_3",
+              category: "物称 vs 人称",
+              title: "无灵主语 (Excitement)",
+              source: "PPT 例句",
+              original: "Excitement deprived me of all power of utterance.",
+              translations: [
+                { type: "人称转译", text: "我兴奋得什么话也说不出来。" }
+              ],
+              note: "Excitement deprived me -> 我兴奋得..."
+            },
+             {
+              id: "ip_4",
+              category: "物称 vs 人称",
+              title: "无灵主语 (Sleep)",
+              source: "PPT 例句",
+              original: "That night sleep eluded him.",
+              translations: [
+                { type: "人称转译", text: "那晚他无法入睡。" }
+              ],
+              note: "Sleep eluded him (睡眠躲避了他) -> 他无法入睡。"
+            },
+            {
+              id: "ip_5",
+              category: "物称 vs 人称",
+              title: "无灵主语 (Bitterness)",
+              source: "PPT 例句",
+              original: "Bitterness fed on the man who had made the world laugh.",
+              translations: [
+                { type: "人称转译", text: "这个人曾让全世界充满了笑声，而他自己却饱受辛酸。" }
+              ],
+              note: "Bitterness fed on... -> 他饱受辛酸。"
+            },
+             {
+              id: "ip_6",
+              category: "物称 vs 人称",
+              title: "汉译英：人称 -> 物称",
+              source: "PPT 例句",
+              original: "我怎么也想不起你的名字。",
+              translations: [
+                { type: "人称直译", text: "I just can't remember your name." },
+                { type: "物称地道", text: "Your name obstinately escapes me." }
+              ],
+              note: "用 escapes me 显得更地道，体现英语客体思维。"
+            },
+            {
+              id: "ip_7",
+              category: "物称 vs 人称",
+              title: "汉译英：人称 -> 物称",
+              source: "PPT 例句",
+              original: "调查结果证明，他就是那婴儿的父亲。",
+              translations: [
+                { type: "物称译法", text: "Investigation fathered the baby on him." }
+              ],
+              note: "Investigation 作主语。"
+            },
+
+            // --- 间接 vs 直接 (Indirect vs Direct) ---
+            {
+              id: "id_1",
+              category: "间接 vs 直接",
+              title: "Negation (News)",
+              source: "PPT 例句",
+              original: "The whole village was astir with the news.",
+              translations: [
+                { type: "译文", text: "消息传来，全村轰动。（骚动、沸腾）" }
+              ],
+              note: "astir 间接表达了一种动态的混乱或兴奋。"
+            },
+            {
+              id: "id_2",
+              category: "间接 vs 直接",
+              title: "Negation (Complaints)",
+              source: "PPT 例句",
+              original: "No complaints passed her lips.",
+              translations: [
+                { type: "译文", text: "她从不抱怨。" }
+              ],
+              note: "否定形式 No complaints... -> 肯定意义 '从不抱怨'。"
+            },
+             {
+              id: "id_3",
+              category: "间接 vs 直接",
+              title: "Soluble",
+              source: "PPT 例句",
+              original: "Sugar and salt are both soluble in water.",
+              translations: [
+                { type: "译文", text: "糖和盐两者都溶于水。" }
+              ],
+              note: "正话反说或反话正说的转换。"
+            },
+
+            // --- 替换 vs 重复 (Substitutive vs Repetitive) ---
+            {
+              id: "sr_1",
+              category: "替换 vs 重复",
+              title: "谚语 (Swallow)",
+              source: "PPT 例句",
+              original: "One swallow does not make a summer.",
+              translations: [
+                { type: "重复修辞", text: "单燕不成夏，独木不成林。" }
+              ],
+              note: "英语避免重复，汉语喜欢用对偶、排比来重复结构以增强气势。"
+            },
+            {
+              id: "sr_2",
+              category: "替换 vs 重复",
+              title: "谚语 (Good/Bad)",
+              source: "PPT 例句",
+              original: "The good die young. / Bad news travels fast.",
+              translations: [
+                { type: "译文", text: "好人不长寿，坏人活千年。 / 坏事传千里。" }
+              ],
+              note: "汉语译文常使用四字格或对仗句。"
+            },
+             {
+              id: "sr_3",
+              category: "替换 vs 重复",
+              title: "谚语 (Pot)",
+              source: "PPT 例句",
+              original: "There is no pot so ugly that it can not find a lid in this world.",
+              translations: [
+                { type: "译文1", text: "破锅不愁无烂盖，衰男自有劣女爱。(渣男)" },
+                { type: "译文2", text: "烂锅定有烂锅盖，窝窝头配老咸菜。" }
+              ],
+              note: "通俗谚语的归化翻译。"
+            },
+            {
+              id: "sr_4",
+              category: "替换 vs 重复",
+              title: "描写 (Hand-clapping)",
+              source: "PPT 例句",
+              original: "Only a very slight and very scattering ripples of half-hearted hand-clapping greeted him.",
+              translations: [
+                { type: "叠词使用", text: "欢迎他的只有几下轻轻的、零零落落的、冷冷淡淡的掌声。" }
+              ],
+              note: "汉语使用叠词(轻轻、零零落落)增强描写效果，英语用 adjectives。"
+            },
+
+            // --- 被动 vs 主动 (Passive vs Active) ---
+            {
+              id: "pa_1",
+              category: "被动 vs 主动",
+              title: "被动语态 (Tea)",
+              source: "PPT 例句",
+              original: "At the tea party only tea and cake were served.",
+              translations: [
+                { type: "主动/无主句", text: "茶会上只提供茶与饼。" }
+              ],
+              note: "英语被动 -> 汉语无主句。"
+            },
+            {
+              id: "pa_2",
+              category: "被动 vs 主动",
+              title: "被动语态 (Punishment)",
+              source: "PPT 例句",
+              original: "Hitler was captured and brought to Amsterdam... The man should be burned to death.",
+              translations: [
+                { type: "主动译文", text: "希特勒抓到了，押解到阿姆斯特丹... 应该把他烧死。" }
+              ],
+              note: "汉语省略被动标记，直接用动词。"
+            },
+            {
+              id: "pa_3",
+              category: "被动 vs 主动",
+              title: "被动语态 (Blinds)",
+              source: "PPT 例句",
+              original: "The blinds were drawn.",
+              translations: [
+                { type: "主动译文", text: "窗帘拉上了。" }
+              ],
+              note: "不需说'窗帘被拉上了'，自然语感为主动形式。"
+            },
+            {
+              id: "pa_4",
+              category: "被动 vs 主动",
+              title: "被动语态 (Machine)",
+              source: "PPT 例句",
+              original: "It is required that the machine should be maintained at regular intervals.",
+              translations: [
+                { type: "主动译文", text: "机器需要定期维修。" }
+              ],
+              note: "It is required that... -> 需要。"
+            },
+
+            // --- 形合 vs 意合 (Hypotactic vs Paratactic) ---
+            {
+              id: "hp_1",
+              category: "形合 vs 意合",
+              title: "Digestion Process",
+              source: "PPT 例句",
+              original: "Food is digested as it passes along the alimentary canal. The process of digestion begins in the mouth where food is chewed...",
+              translations: [
+                { type: "译文", text: "食物在通过消化道时被消化。消化过程始于口腔，食物在口腔被唾液咀嚼和润湿..." }
+              ],
+              note: "英语多用 as, where, which 等连接词(形合)；汉语多用流水的短句(意合)。"
+            },
+            {
+              id: "hp_2",
+              category: "形合 vs 意合",
+              title: "Translation Practice",
+              source: "PPT 例句",
+              original: "In the doorway lay at least 12 umbrella of various colors and sizes.",
+              translations: [
+                { type: "拆分译法", text: "门口放着一堆雨伞，少说也有十二把，五颜六色，大小不一。" }
+              ],
+              note: "化整为零：英语一句，汉语四小句。"
+            },
+            {
+              id: "hp_3",
+              category: "形合 vs 意合",
+              title: "Translation Practice",
+              source: "PPT 例句",
+              original: "Yesterday a book was stolen from the library by a young lady who was apparently innocent and beautiful.",
+              translations: [
+                { type: "拆分译法", text: "昨天图书馆一本书遭窃，窃贼是位年轻女子，从外表看还挺单纯，且颇具姿色。" }
+              ],
+              note: "英语定语从句(who was...) -> 汉语独立分句。"
+            }
+          ]
+        };
+
+        // --- 子组件 ---
+
+        const FeatureCard = ({ data, isReviewMode }) => {
+            const [revealed, setRevealed] = useState(false);
+            const isHidden = isReviewMode && !revealed;
 
             return (
-            <div className="max-w-6xl mx-auto p-4 space-y-8 animate-fadeIn">
-                {/* Search */}
-                <div className="relative max-w-2xl mx-auto">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Search size={22} className="text-indigo-400" />
-                </div>
-                <input
-                    type="text"
-                    placeholder="搜索作品、术语、作者或翻译..."
-                    className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition-all shadow-sm text-lg"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                </div>
-
-                {/* New Section: Study Notes & Analysis */}
-                <div className="space-y-6">
-                <div 
-                    className="flex items-center justify-between text-indigo-900 border-b-2 border-indigo-100 pb-2 cursor-pointer hover:bg-indigo-50/50 transition-colors rounded-t-lg p-2"
-                    onClick={() => toggleSection('notes')}
-                >
-                    <div className="flex items-center space-x-2">
-                        <GraduationCap size={28} className="text-indigo-600" />
-                        <h2 className="text-2xl font-bold">重点作品赏析与备考 (Analysis & Exam Notes)</h2>
-                    </div>
-                    <ChevronDown size={24} className={`text-indigo-400 transform transition-transform duration-300 ${sectionsOpen.notes ? 'rotate-180' : ''}`} />
-                </div>
-
-                {sectionsOpen.notes && (
-                    <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-6 animate-fadeIn">
-                        {filteredNotes.map((note, idx) => (
-                        <div key={idx} className={`p-6 rounded-xl border transition-all hover:shadow-lg flex flex-col ${note.isHighlight ? 'bg-indigo-50 border-indigo-200 ring-1 ring-indigo-200 col-span-full' : 'bg-white border-gray-100 shadow-sm'}`}>
-                            <div className="flex justify-between items-start mb-3">
-                            <h3 className="font-bold text-lg text-indigo-800">{note.title}</h3>
-                            {note.isHighlight && <Star size={20} className="text-yellow-500 fill-current" />}
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
+                    <div 
+                        className="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center cursor-pointer select-none"
+                        onClick={() => isReviewMode && setRevealed(!revealed)}
+                    >
+                        <div>
+                            <h3 className="text-lg font-bold text-blue-900">{data.pair}</h3>
+                            <p className="text-sm text-slate-500 font-mono">{data.enTerm}</p>
+                        </div>
+                        {isReviewMode && (
+                            <div className="text-slate-400">
+                                {isHidden ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5 text-blue-500" />}
                             </div>
-                            <p className="text-sm text-gray-500 font-medium mb-4 flex items-center">
-                            <span className="w-2 h-2 rounded-full bg-indigo-400 mr-2"></span>
-                            {note.author}
-                            </p>
-                            
-                            {/* Tags */}
-                            {note.tags && (
-                                <div className="flex flex-wrap gap-2 mb-4">
-                                {note.tags.map((tag, tIdx) => (
-                                    <span key={tIdx} className="px-2 py-1 bg-white border border-gray-200 rounded text-xs text-gray-600 font-medium">
-                                    {tag}
-                                    </span>
-                                ))}
+                        )}
+                    </div>
+
+                    <div className={`transition-all duration-300 ${isHidden ? 'h-0 opacity-0 overflow-hidden' : 'p-0 opacity-100'}`}>
+                        <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+                            <div className="p-4 bg-blue-50/30">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded">English</span>
+                                    <span className="font-semibold text-slate-700">{data.english.trait}</span>
                                 </div>
-                            )}
-
-                            {/* Notes Content */}
-                            <ul className="space-y-2 mb-6 flex-grow">
-                                {note.content.map((line, lIdx) => (
-                                <li key={lIdx} className="text-sm text-gray-700 leading-relaxed flex items-start">
-                                    <span className="mr-2 text-indigo-400 mt-1">•</span>
-                                    {line}
-                                </li>
-                                ))}
-                            </ul>
-
-                            {/* New QA Section */}
-                            {note.qa && (
-                                <div className="mt-4 pt-4 border-t border-dashed border-gray-200">
-                                <h4 className="flex items-center text-sm font-bold text-gray-800 mb-3">
-                                    <HelpCircle size={16} className="mr-2 text-indigo-500" />
-                                    Key Questions & Answers
-                                </h4>
-                                <div className="space-y-3">
-                                    {note.qa.map((qaItem, qIdx) => (
-                                    <div key={qIdx} className="bg-gray-50 p-3 rounded-lg border border-gray-100">
-                                        <p className="text-sm font-semibold text-indigo-900 mb-1">Q: {qaItem.q}</p>
-                                        <p className="text-sm text-gray-600 pl-4 border-l-2 border-green-400">A: {qaItem.a}</p>
-                                    </div>
+                                <p className="text-sm text-slate-700 mb-3 leading-relaxed">{data.english.desc}</p>
+                                <div className="flex flex-wrap gap-1">
+                                    {data.english.keywords.map((k, i) => (
+                                        <span key={i} className="text-xs border border-blue-200 text-blue-600 px-1.5 py-0.5 rounded bg-white">{k}</span>
                                     ))}
                                 </div>
+                            </div>
+
+                            <div className="p-4 bg-red-50/30">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="bg-red-100 text-red-800 text-xs font-bold px-2 py-1 rounded">Chinese</span>
+                                    <span className="font-semibold text-slate-700">{data.chinese.trait}</span>
                                 </div>
-                            )}
+                                <p className="text-sm text-slate-700 mb-3 leading-relaxed">{data.chinese.desc}</p>
+                                <div className="flex flex-wrap gap-1">
+                                    {data.chinese.keywords.map((k, i) => (
+                                        <span key={i} className="text-xs border border-red-200 text-red-600 px-1.5 py-0.5 rounded bg-white">{k}</span>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
-                        ))}
+                        
+                        <div className="p-3 bg-slate-50 border-t border-slate-100 text-sm text-slate-600 italic flex items-start gap-2">
+                            <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                            {data.summary}
+                        </div>
                     </div>
-                )}
                 </div>
-
-                <div className="grid md:grid-cols-2 gap-8">
-                {/* Definitions Column */}
-                <div className="space-y-6">
-                    <div 
-                        className="flex items-center justify-between text-indigo-900 border-b border-indigo-200 pb-2 cursor-pointer hover:bg-indigo-50/50 transition-colors rounded-t-lg p-2"
-                        onClick={() => toggleSection('definitions')}
-                    >
-                        <div className="flex items-center space-x-2">
-                            <BookOpen size={24} />
-                            <h2 className="text-xl font-bold">名词解释 (Definitions)</h2>
-                        </div>
-                        <ChevronDown size={24} className={`text-indigo-400 transform transition-transform duration-300 ${sectionsOpen.definitions ? 'rotate-180' : ''}`} />
-                    </div>
-                    
-                    {sectionsOpen.definitions && (
-                        <div className="space-y-4 animate-fadeIn">
-                        {filteredDefinitions.length > 0 ? filteredDefinitions.map((item, idx) => (
-                            <div key={idx} className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow group">
-                            <h3 className="font-bold text-lg text-indigo-700 mb-2 group-hover:text-indigo-600">{item.term}</h3>
-                            <p className="text-gray-600 leading-relaxed text-sm">{item.definition}</p>
-                            </div>
-                        )) : (
-                            <p className="text-gray-400 italic text-center py-8">No terms found matching your search.</p>
-                        )}
-                        </div>
-                    )}
-                </div>
-
-                {/* Translation Column */}
-                <div className="space-y-6">
-                    <div 
-                        className="flex items-center justify-between text-indigo-900 border-b border-indigo-200 pb-2 cursor-pointer hover:bg-indigo-50/50 transition-colors rounded-t-lg p-2"
-                        onClick={() => toggleSection('translations')}
-                    >
-                        <div className="flex items-center space-x-2">
-                            <FileText size={24} />
-                            <h2 className="text-xl font-bold">翻译对照 (Translations)</h2>
-                        </div>
-                        <ChevronDown size={24} className={`text-indigo-400 transform transition-transform duration-300 ${sectionsOpen.translations ? 'rotate-180' : ''}`} />
-                    </div>
-
-                    {sectionsOpen.translations && (
-                        <div className="space-y-4 animate-fadeIn">
-                        {APP_DATA.translations.map((text, tIdx) => (
-                            <div key={tIdx} className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden group hover:shadow-md transition-shadow">
-                            <div className="bg-gray-50 px-5 py-3 border-b border-gray-100 font-bold text-gray-700 flex justify-between items-center">
-                                {text.title}
-                                <Lightbulb size={16} className="text-gray-400 group-hover:text-indigo-500 transition-colors" />
-                            </div>
-                            <div className="divide-y divide-gray-100">
-                                {text.segments.map((seg, sIdx) => {
-                                // Simple filter for translation content
-                                if (searchTerm && !seg.en.toLowerCase().includes(searchTerm.toLowerCase()) && !seg.cn.includes(searchTerm)) {
-                                    return null;
-                                }
-                                return (
-                                    <div key={sIdx} className="p-4 hover:bg-indigo-50/30 transition-colors">
-                                    <p className="text-gray-800 font-serif mb-2 leading-relaxed">{seg.en}</p>
-                                    <p className="text-gray-600 text-sm border-l-4 border-indigo-300 pl-3 leading-relaxed bg-gray-50/50 py-1">{seg.cn}</p>
-                                    </div>
-                                );
-                                })}
-                            </div>
-                            </div>
-                        ))}
-                        </div>
-                    )}
-                </div>
-                </div>
-            </div>
             );
         };
 
-        // 4. Main App
-        const App = () => {
-            const [currentTab, setCurrentTab] = useState('quiz'); // 'quiz' | 'reference'
+        const TheoryCard = ({ data, isReviewMode }) => {
+            const [revealed, setRevealed] = useState(false);
+            const isHidden = isReviewMode && !revealed;
 
             return (
-            <div className="min-h-screen bg-slate-50 text-gray-900 font-sans">
-                <Header currentTab={currentTab} setTab={setCurrentTab} />
-                
-                <main className="py-6">
-                {currentTab === 'quiz' ? <QuizSection /> : <ReferenceSection />}
-                </main>
-                
-                <footer className="text-center text-gray-400 text-sm py-8 border-t border-gray-200 mt-8">
-                <p>© 2024 American Literature Study Tool</p>
-                <p className="text-xs mt-1 text-gray-300">Designed for Literature Review & Exam Prep</p>
-                </footer>
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div 
+                        className="p-4 border-b border-slate-100 flex justify-between items-center cursor-pointer bg-amber-50/50 select-none"
+                        onClick={() => isReviewMode && setRevealed(!revealed)}
+                    >
+                        <div>
+                            <h3 className="text-lg font-bold text-slate-800">{data.title}</h3>
+                            <p className="text-sm text-slate-500 font-mono">{data.enTitle}</p>
+                        </div>
+                        {isReviewMode && (
+                            <div className="text-slate-400">
+                                {isHidden ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5 text-amber-500" />}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className={`p-5 transition-all duration-300 ${isHidden ? 'hidden' : 'block'}`}>
+                        <ul className="space-y-4">
+                            {data.content.map((item, i) => (
+                                <li key={i} className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+                                    <span className="font-bold text-slate-700 min-w-[120px]">{item.label}</span>
+                                    <span className="text-slate-600 text-sm leading-relaxed">{item.desc}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
+            );
+        };
+
+        const CorpusCard = ({ data }) => {
+            const [expanded, setExpanded] = useState(false);
+
+            const getBadgeColor = (cat) => {
+                const map = {
+                    "文学描写": "bg-purple-100 text-purple-700",
+                    "静态 vs 动态": "bg-blue-100 text-blue-700",
+                    "物称 vs 人称": "bg-green-100 text-green-700",
+                    "间接 vs 直接": "bg-orange-100 text-orange-700",
+                    "替换 vs 重复": "bg-pink-100 text-pink-700",
+                    "被动 vs 主动": "bg-cyan-100 text-cyan-700",
+                    "形合 vs 意合": "bg-indigo-100 text-indigo-700"
+                };
+                return map[cat] || "bg-slate-100 text-slate-700";
+            };
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="p-4 flex justify-between items-start">
+                        <div className="w-full">
+                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                               <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide ${getBadgeColor(data.category)}`}>
+                                  {data.category}
+                               </span>
+                               <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded">
+                                  {data.source}
+                               </span>
+                            </div>
+                            <h3 className="font-bold text-slate-800 text-lg">{data.title}</h3>
+                            <p className="text-slate-600 font-serif text-sm mt-3 italic bg-slate-50 p-3 rounded border border-slate-100 leading-relaxed">
+                                "{data.original.length > 120 && !expanded ? data.original.substring(0, 120) + '...' : data.original}"
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="px-4 pb-4">
+                        <button 
+                            onClick={() => setExpanded(!expanded)}
+                            className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 mb-3 transition-colors"
+                        >
+                            {expanded ? '收起译文' : '查看译文与分析'}
+                            {expanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                        </button>
+
+                        {expanded && (
+                            <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                                {data.translations.map((t, i) => (
+                                    <div key={i} className="text-sm border-l-2 border-indigo-200 pl-3 py-1">
+                                        <span className="block text-xs text-indigo-500 font-bold mb-0.5">{t.type}</span>
+                                        <p className="text-slate-700 leading-relaxed">{t.text}</p>
+                                    </div>
+                                ))}
+                                <div className="mt-4 bg-yellow-50 p-3 rounded text-xs text-yellow-800 border border-yellow-100 flex gap-2">
+                                    <div className="mt-0.5">💡</div>
+                                    <div>
+                                        <strong className="block mb-1">对比分析：</strong> 
+                                        {data.note}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const EmptyState = () => (
+            <div className="text-center py-12 text-slate-400">
+                <Search className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                <p>没有找到相关内容，请尝试更换关键词。</p>
             </div>
+        );
+
+        // --- 主应用组件 ---
+        const RevisionApp = () => {
+            const [activeTab, setActiveTab] = useState('features');
+            const [searchTerm, setSearchTerm] = useState('');
+            const [reviewMode, setReviewMode] = useState(false);
+            const [selectedCategory, setSelectedCategory] = useState('All');
+
+            // Filter Logic
+            const filteredFeatures = useMemo(() => {
+                return DATA.features.filter(f => 
+                    f.pair.includes(searchTerm) || 
+                    f.enTerm.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    f.summary.includes(searchTerm)
+                );
+            }, [searchTerm]);
+
+            const filteredTheories = useMemo(() => {
+                return DATA.theories.filter(t => 
+                    t.title.includes(searchTerm) || 
+                    t.content.some(c => c.desc.includes(searchTerm))
+                );
+            }, [searchTerm]);
+
+            const categories = useMemo(() => {
+                const cats = new Set(DATA.corpus.map(c => c.category));
+                return ['All', ...Array.from(cats)];
+            }, []);
+
+            const filteredCorpus = useMemo(() => {
+                return DATA.corpus.filter(c => {
+                    const matchesSearch = c.title.includes(searchTerm) || c.original.toLowerCase().includes(searchTerm.toLowerCase());
+                    const matchesCategory = selectedCategory === 'All' || c.category === selectedCategory;
+                    return matchesSearch && matchesCategory;
+                });
+            }, [searchTerm, selectedCategory]);
+
+            return (
+                <div className="min-h-screen bg-slate-50 text-slate-800 pb-10">
+                    {/* Header */}
+                    <header className="bg-blue-900 text-white p-4 shadow-lg sticky top-0 z-50">
+                        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+                            <div className="flex items-center gap-2">
+                                <BookOpen className="w-8 h-8 text-blue-300" />
+                                <div>
+                                    <h1 className="text-xl md:text-2xl font-bold">英汉对比与翻译复习库</h1>
+                                    <p className="text-xs text-blue-200">2025 Exam Revision • Contrastive Studies</p>
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-4 w-full md:w-auto">
+                                <div className="relative w-full md:w-64">
+                                    <Search className="absolute left-3 top-2.5 w-4 h-4 text-blue-300" />
+                                    <input 
+                                        type="text" 
+                                        placeholder="搜索概念、理论或例句..." 
+                                        className="w-full pl-9 pr-4 py-2 bg-blue-800 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-blue-400 text-white transition-all"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Main Content */}
+                    <main className="max-w-6xl mx-auto p-4 flex flex-col md:flex-row gap-6 mt-4">
+                        
+                        {/* Sidebar Nav */}
+                        <nav className="w-full md:w-64 flex-shrink-0 space-y-2">
+                            <button 
+                                onClick={() => setActiveTab('features')}
+                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${activeTab === 'features' ? 'bg-white text-blue-700 shadow-md font-bold' : 'text-slate-600 hover:bg-white/50'}`}
+                            >
+                                <Scale className="w-5 h-5" />
+                                十大对比特征
+                            </button>
+                            <button 
+                                onClick={() => setActiveTab('theories')}
+                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${activeTab === 'theories' ? 'bg-white text-blue-700 shadow-md font-bold' : 'text-slate-600 hover:bg-white/50'}`}
+                            >
+                                <Book className="w-5 h-5" />
+                                翻译理论与策略
+                            </button>
+                            <button 
+                                onClick={() => setActiveTab('corpus')}
+                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${activeTab === 'corpus' ? 'bg-white text-blue-700 shadow-md font-bold' : 'text-slate-600 hover:bg-white/50'}`}
+                            >
+                                <Quote className="w-5 h-5" />
+                                经典语料库
+                            </button>
+                            
+                            {/* Review Mode Toggle */}
+                            <div className="mt-8 px-4 pt-6 border-t border-slate-200">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm font-semibold text-slate-500 flex items-center gap-2">
+                                        <Highlighter className="w-4 h-4" />
+                                        复习模式
+                                    </span>
+                                    <button 
+                                        onClick={() => setReviewMode(!reviewMode)}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${reviewMode ? 'bg-blue-600' : 'bg-slate-300'}`}
+                                    >
+                                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${reviewMode ? 'translate-x-6' : 'translate-x-1'}`} />
+                                    </button>
+                                </div>
+                                <p className="text-xs text-slate-400 mt-2">
+                                    开启后将遮挡详细解释，只显示标题，便于自测记忆。
+                                </p>
+                            </div>
+                        </nav>
+
+                        {/* Content Area */}
+                        <div className="flex-1 min-h-[600px]">
+                            
+                            {/* Features Tab */}
+                            {activeTab === 'features' && (
+                                <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
+                                    <div className="flex justify-between items-end">
+                                        <h2 className="text-2xl font-bold text-slate-800">英汉对比十大特征</h2>
+                                        <span className="text-sm text-slate-500">共 {DATA.features.length} 条知识点</span>
+                                    </div>
+                                    
+                                    <div className="grid gap-6">
+                                        {filteredFeatures.map((item) => (
+                                            <FeatureCard key={item.id} data={item} isReviewMode={reviewMode} />
+                                        ))}
+                                        {filteredFeatures.length === 0 && <EmptyState />}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Theories Tab */}
+                            {activeTab === 'theories' && (
+                                <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
+                                    <h2 className="text-2xl font-bold text-slate-800">翻译理论与策略</h2>
+                                    <div className="grid gap-6">
+                                        {filteredTheories.map((theory, idx) => (
+                                            <TheoryCard key={idx} data={theory} isReviewMode={reviewMode} />
+                                        ))}
+                                         {filteredTheories.length === 0 && <EmptyState />}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Corpus Tab */}
+                            {activeTab === 'corpus' && (
+                                <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
+                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+                                        <h2 className="text-2xl font-bold text-slate-800">经典语料与案例分析</h2>
+                                        
+                                        {/* Category Filter */}
+                                        <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm w-full sm:w-auto">
+                                            <Filter className="w-4 h-4 text-slate-500" />
+                                            <select 
+                                                value={selectedCategory}
+                                                onChange={(e) => setSelectedCategory(e.target.value)}
+                                                className="text-sm text-slate-700 bg-transparent border-none focus:ring-0 cursor-pointer pr-8 py-1 flex-1 outline-none"
+                                            >
+                                                {categories.map(cat => (
+                                                    <option key={cat} value={cat}>{cat === 'All' ? '全部分类' : cat}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid gap-6">
+                                        {filteredCorpus.map((item) => (
+                                            <CorpusCard key={item.id} data={item} />
+                                        ))}
+                                         {filteredCorpus.length === 0 && <EmptyState />}
+                                    </div>
+                                </div>
+                            )}
+
+                        </div>
+                    </main>
+                </div>
             );
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        root.render(<RevisionApp />);
     </script>
 </body>
 </html>
