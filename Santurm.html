@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Saturn Particle System - Chaos & Order</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* UI 覆盖层 */
+        #ui-layer {
+            position: absolute;
+            bottom: 40px;
+            left: 40px;
+            z-index: 10;
+            color: rgba(255, 255, 255, 0.8);
+            pointer-events: none;
+            /* 让鼠标事件穿透到 Canvas */
+            user-select: none;
+            transition: opacity 0.5s ease;
+        }
+
+        h1 {
+            font-weight: 200;
+            font-size: 24px;
+            margin: 0 0 10px 0;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        p {
+            font-size: 12px;
+            line-height: 1.5;
+            max-width: 300px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* 控制按钮区域 */
+        #controls {
+            position: absolute;
+            bottom: 40px;
+            right: 40px;
+            z-index: 10;
+            pointer-events: auto;
+            display: flex;
+            gap: 20px;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: scale(1.05);
+        }
+
+        /* 加载指示器 */
+        #loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 12px;
+            letter-spacing: 4px;
+            animation: pulse 2s infinite;
+            z-index: 20;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.3;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.3;
+            }
+        }
+
+        .instruction {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: rgba(255, 255, 255, 0.3);
+            pointer-events: none;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 10px;
+            opacity: 0;
+            transition: opacity 1s;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="loader">INITIALIZING SYSTEM...</div>
+
+    <div id="canvas-container"></div>
+
+    <div id="ui-layer">
+        <h1>Chronos • Saturn</h1>
+        <p>
+            基于物理的粒子模拟。<br>
+            <span style="color: #aaa;">滚轮/缩放</span>：穿越粒子层级<br>
+            <span style="color: #aaa;">移动/拖拽</span>：改变观测角度
+        </p>
+    </div>
+
+    <div class="instruction" id="scroll-hint">Scroll to Dive In</div>
+
+    <div id="controls">
+        <button class="btn" id="fs-btn">全屏体验</button>
+    </div>
+
+    <!-- 引入 Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        /**
+         * 核心架构说明：
+         * 1. 使用 BufferGeometry 存储数十万个粒子的数据（位置、随机值、轨道半径、角度）。
+         * 2. 使用 ShaderMaterial (GLSL) 在 GPU 上直接进行动画计算：
+         * - 模拟开普勒运动 (速度随半径变化)
+         * - 模拟距离光照衰减 (Inverse Square Law)
+         * - 模拟混沌噪点 (Brownian Motion)
+         * 3. JS 端只负责传递 Uniforms (时间、鼠标位置、Zoom层级)。
+         */
+
+        // JS 版 smoothstep (GLSL 内置函数在 JS 中不存在)
+        function smoothstep(edge0, edge1, x) {
+            const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+            return t * t * (3 - 2 * t);
+        }
+
+        const CONFIG = {
+            particleCount: 150000, // 粒子数量，为了极致画面设高
+            coreRadius: 30,        // 土星核心半径
+            ringInner: 45,         // 光环内径
+            ringOuter: 100,        // 光环外径
+            baseColor: new THREE.Color(0xffccaa), // 土星基础色调 (米黄/金)
+            chaosThreshold: 0.7    // 触发混沌的缩放阈值
+        };
+
+        let scene, camera, renderer;
+        let particles, material;
+        let time = 0;
+
+        // 交互状态
+        const state = {
+            zoomLevel: 0.0, // 0.0 (远景) -> 1.0 (极近/混沌)
+            targetZoom: 0.0,
+            mouseX: 0,
+            mouseY: 0,
+            targetMouseX: 0,
+            targetMouseY: 0,
+            lastPinchDist: undefined // 用于移动端双指缩放
+        };
+
+        // GLSL 顶点着色器
+        const vertexShader = `
+            uniform float uTime;
+            uniform float uZoom;      // 0.0 ~ 1.0
+            uniform float uPixelRatio;
+            uniform vec2 uMouse;      // 用于轻微视差
+
+            attribute float aSize;
+            attribute float aSpeed;
+            attribute float aAngle;
+            attribute float aRadius;
+            attribute float aRandom;  // 0.0 ~ 1.0
+            attribute vec3 aColor;
+
+            varying vec3 vColor;
+            varying float vAlpha;
+
+            // 伪随机函数
+            float random(vec2 st) {
+                return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+            }
+
+            // 噪声函数 (用于混沌抖动)
+            vec3 noise(vec3 p) {
+                return vec3(
+                    sin(p.x * 10.0 + uTime * 5.0),
+                    cos(p.y * 10.0 + uTime * 6.0),
+                    sin(p.z * 10.0 + uTime * 4.0)
+                );
+            }
+
+            void main() {
+                vColor = aColor;
+
+                // --- 1. 开普勒轨道运动 ---
+                // 角度随时间增加，速度由 aSpeed 控制 (内圈快外圈慢)
+                // 当 uZoom 接近 1.0 (混沌态) 时，轨道运动减缓，仿佛时间冻结，随后炸开
+                float currentAngle = aAngle + uTime * aSpeed * (1.0 - uZoom * 0.5);
+                
+                vec3 orbitPos;
+                orbitPos.x = cos(currentAngle) * aRadius;
+                orbitPos.z = sin(currentAngle) * aRadius;
+                orbitPos.y = position.y; // 保持原始的高度分布（扁平光环或球体）
+
+                // --- 2. 交互式倾斜 ---
+                // 基于鼠标位置做轻微的整体倾斜
+                float tiltX = uMouse.y * 0.5; 
+                float tiltZ = uMouse.x * 0.5;
+                
+                // 简单的旋转矩阵应用 (绕X轴和Z轴微调)
+                vec3 finalPos = orbitPos;
+                
+                // --- 3. 混沌/爆炸效果 (Chaos) ---
+                // 当 uZoom 变大，粒子不仅靠近，还会加上高频噪点位置
+                // 粒子会基于自身的随机属性 (aRandom) 向外炸开
+                
+                float chaosLevel = smoothstep(0.6, 1.0, uZoom); // 0.6以后开始混沌
+                
+                if (chaosLevel > 0.0) {
+                    // 爆炸方向：沿着当前位置向外
+                    vec3 explodeDir = normalize(finalPos) * 200.0 * aRandom; 
+                    
+                    // 高频抖动 (Brownian-like)
+                    vec3 jitter = noise(finalPos * 0.1) * 20.0 * chaosLevel;
+                    
+                    finalPos = mix(finalPos, finalPos + explodeDir + jitter, chaosLevel);
+                }
+
+                vec4 mvPosition = modelViewMatrix * vec4(finalPos, 1.0);
+                gl_Position = projectionMatrix * mvPosition;
+
+                // --- 4. 尺寸与光照物理计算 ---
+                
+                // 基础距离计算
+                float dist = length(mvPosition.xyz);
+                
+                // 物理大小衰减: size / distance
+                // 在混沌模式下，粒子会变得非常大，模拟冲入云雾的感觉
+                float baseSize = aSize * (300.0 / dist);
+                float chaosSize = baseSize * (1.0 + chaosLevel * 5.0); // 混沌时变大
+                
+                gl_PointSize = chaosSize * uPixelRatio;
+
+                // --- 5. 亮度/Alpha 计算 (距离平方反比模拟) ---
+                // 远的时候暗 (simulate light falloff)
+                // 近的时候亮 (simulate intensity)
+                
+                float brightness = 1.0;
+                
+                // 模拟距离越近越亮，但有一个上限防止全白
+                // 这里的逻辑：zoom越大(相机物理距离越近)，整体环境光越强
+                float sceneLight = 0.3 + uZoom * 1.5; 
+                
+                // 粒子自身的透明度
+                float alpha = smoothstep(500.0, 10.0, dist); // 太远不可见
+                
+                vAlpha = alpha * sceneLight;
+            }
+        `;
+
+        // GLSL 片元着色器
+        const fragmentShader = `
+            uniform float uZoom;
+            
+            varying vec3 vColor;
+            varying float vAlpha;
+
+            void main() {
+                // 绘制圆形粒子，边缘柔化
+                vec2 coord = gl_PointCoord - vec2(0.5);
+                float r = length(coord);
+                
+                if (r > 0.5) discard;
+
+                // 径向渐变，中心亮边缘暗
+                float glow = 1.0 - (r * 2.0);
+                glow = pow(glow, 1.5); // 锐化边缘
+
+                // 颜色混合
+                vec3 finalColor = vColor;
+                
+                // 当处于混沌态(ZoomIn)，颜色倾向于过曝/白色，增加临场感
+                float whiteWash = smoothstep(0.8, 1.0, uZoom);
+                finalColor = mix(finalColor, vec3(1.0), whiteWash * 0.5 * glow);
+
+                gl_FragColor = vec4(finalColor, vAlpha * glow);
+            }
+        `;
+
+        function init() {
+            const container = document.getElementById('canvas-container');
+
+            // 1. Scene & Camera
+            scene = new THREE.Scene();
+            // 雾效，增强深邃感
+            scene.fog = new THREE.FogExp2(0x000000, 0.002);
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
+            camera.position.set(0, 40, 200); // 初始视角
+            camera.lookAt(0, 0, 0);
+
+            // 2. Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            // 启用这种混合模式可以让粒子叠加时发光
+            container.appendChild(renderer.domElement);
+
+            // 3. Generate Particles
+            createParticles();
+
+            // 4. Events
+            window.addEventListener('resize', onWindowResize, false);
+            document.addEventListener('mousemove', onMouseMove, false);
+            // 移动端触摸处理
+            document.addEventListener('touchmove', onTouchMove, { passive: false });
+            document.addEventListener('touchend', onTouchEnd, false);
+            document.addEventListener('wheel', onWheel, { passive: false });
+
+            // UI Events
+            document.getElementById('fs-btn').addEventListener('click', toggleFullScreen);
+
+            // Remove Loader
+            setTimeout(() => {
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('scroll-hint').style.opacity = '1';
+                setTimeout(() => document.getElementById('scroll-hint').style.opacity = '0', 4000);
+            }, 1000);
+
+            animate();
+        }
+
+        function createParticles() {
+            const geometry = new THREE.BufferGeometry();
+            const positions = [];
+            const colors = [];
+            const sizes = [];
+            const speeds = []; // 轨道角速度
+            const angles = []; // 初始角度
+            const radii = [];  // 轨道半径
+            const randoms = []; // 用于混沌的随机种子
+
+            const colorCore = new THREE.Color(0xffaa55); // 核心：橙色/金色
+            const colorRingInner = new THREE.Color(0xaa8866); // 环：土色
+            const colorRingOuter = new THREE.Color(0xccccff); // 外环：冷色/冰
+
+            for (let i = 0; i < CONFIG.particleCount; i++) {
+                let x, y, z, r, angle, size, speed, color;
+                const rnd = Math.random();
+
+                // 30% 粒子在核心 (球体)，70% 在光环 (圆盘)
+                if (rnd < 0.3) {
+                    // --- Core (Sphere) ---
+                    // 使用球体均匀分布算法
+                    const theta = Math.random() * Math.PI * 2;
+                    const phi = Math.acos((Math.random() * 2) - 1);
+                    const radius = Math.cbrt(Math.random()) * CONFIG.coreRadius; // 立方根确保内部不至于太密
+
+                    x = radius * Math.sin(phi) * Math.cos(theta);
+                    y = radius * Math.sin(phi) * Math.sin(theta);
+                    z = radius * Math.cos(phi);
+
+                    r = Math.sqrt(x * x + z * z); // 平面投影半径用于计算开普勒速度
+                    angle = Math.atan2(z, x);
+
+                    size = Math.random() * 2.5;
+                    color = colorCore.clone().lerp(new THREE.Color(0xffffff), Math.random() * 0.3);
+
+                } else {
+                    // --- Rings (Disk) ---
+                    // 分布在 Inner ~ Outer 之间
+                    // 加上一些 gaps (模仿卡西尼缝)
+                    let ringRadius = CONFIG.ringInner + Math.random() * (CONFIG.ringOuter - CONFIG.ringInner);
+
+                    // 制造一个缝隙 (Cassini Division simulation)
+                    if (ringRadius > 70 && ringRadius < 75) ringRadius += 10;
+
+                    const theta = Math.random() * Math.PI * 2;
+
+                    // 环很薄，y轴抖动很小
+                    y = (Math.random() - 0.5) * 2.0;
+                    x = Math.cos(theta) * ringRadius;
+                    z = Math.sin(theta) * ringRadius;
+
+                    r = ringRadius;
+                    angle = theta;
+                    size = Math.random() * 1.5;
+
+                    // 颜色基于半径渐变
+                    if (r < 70) color = colorRingInner;
+                    else color = colorRingOuter;
+
+                    // 增加色彩噪点
+                    color = color.clone().lerp(new THREE.Color(0xffffff), Math.random() * 0.2);
+                }
+
+                positions.push(x, y, z);
+
+                // 物理直觉：开普勒第三定律近似 -> 速度与半径的平方根成反比
+                // 越近越快
+                speed = 20.0 / Math.sqrt(r + 1.0);
+
+                // 添加一些随机性，不让它们像僵尸一样完全同步
+                speed += (Math.random() - 0.5) * 0.2;
+
+                speeds.push(speed);
+                angles.push(angle);
+                radii.push(r);
+                sizes.push(size);
+                randoms.push(Math.random());
+                colors.push(color.r, color.g, color.b);
+            }
+
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            geometry.setAttribute('aColor', new THREE.Float32BufferAttribute(colors, 3));
+            geometry.setAttribute('aSize', new THREE.Float32BufferAttribute(sizes, 1));
+            geometry.setAttribute('aSpeed', new THREE.Float32BufferAttribute(speeds, 1));
+            geometry.setAttribute('aAngle', new THREE.Float32BufferAttribute(angles, 1));
+            geometry.setAttribute('aRadius', new THREE.Float32BufferAttribute(radii, 1));
+            geometry.setAttribute('aRandom', new THREE.Float32BufferAttribute(randoms, 1));
+
+            material = new THREE.ShaderMaterial({
+                uniforms: {
+                    uTime: { value: 0 },
+                    uPixelRatio: { value: window.devicePixelRatio },
+                    uMouse: { value: new THREE.Vector2(0, 0) },
+                    uZoom: { value: 0 }
+                },
+                vertexShader: vertexShader,
+                fragmentShader: fragmentShader,
+                transparent: true,
+                depthWrite: false, // 关键：关闭深度写入以实现加法混合不遮挡
+                blending: THREE.AdditiveBlending // 发光效果
+            });
+
+            particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+        }
+
+        // --- Interaction Logic ---
+
+        function onMouseMove(event) {
+            // Normalize mouse position -1 to 1
+            state.targetMouseX = (event.clientX / window.innerWidth) * 2 - 1;
+            state.targetMouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+        }
+
+        function onTouchMove(event) {
+            event.preventDefault(); // Prevent scrolling
+            if (event.touches.length === 2) {
+                // Pinch-to-zoom：双指缩放
+                const dx = event.touches[0].clientX - event.touches[1].clientX;
+                const dy = event.touches[0].clientY - event.touches[1].clientY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (state.lastPinchDist !== undefined) {
+                    const delta = (state.lastPinchDist - dist) * 0.005;
+                    state.targetZoom = Math.max(0, Math.min(1.1, state.targetZoom + delta));
+                }
+                state.lastPinchDist = dist;
+            } else if (event.touches.length === 1) {
+                state.targetMouseX = (event.touches[0].clientX / window.innerWidth) * 2 - 1;
+                state.targetMouseY = -(event.touches[0].clientY / window.innerHeight) * 2 + 1;
+            }
+        }
+
+        function onTouchEnd(event) {
+            // 手指松开时重置 pinch 状态
+            if (event.touches.length < 2) {
+                state.lastPinchDist = undefined;
+            }
+        }
+
+        function onWheel(event) {
+            // 使用滚轮控制 Zoom Level
+            event.preventDefault();
+            // 灵敏度控制
+            const delta = event.deltaY * 0.001;
+            state.targetZoom += delta;
+            // Clamp 0 to 1.2 (允许稍微过充一点，1.0是完全混沌)
+            state.targetZoom = Math.max(0, Math.min(1.1, state.targetZoom));
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            material.uniforms.uPixelRatio.value = window.devicePixelRatio;
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+                document.getElementById('fs-btn').textContent = "退出全屏";
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                    document.getElementById('fs-btn').textContent = "全屏体验";
+                }
+            }
+        }
+
+        // --- Animation Loop ---
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            time += 0.005;
+
+            // 1. 平滑插值 (Lerp) 更新状态
+            // 鼠标平滑
+            state.mouseX += (state.targetMouseX - state.mouseX) * 0.05;
+            state.mouseY += (state.targetMouseY - state.mouseY) * 0.05;
+            // 缩放平滑 (产生重量感)
+            state.zoomLevel += (state.targetZoom - state.zoomLevel) * 0.03;
+
+            // 2. 更新相机位置
+            // 当 zoomLevel 增加时，相机逼近原点
+            // Base radius: 200, Closest radius: 10
+            const currentCamRadius = 200 - (state.zoomLevel * 190);
+
+            // 结合鼠标位置旋转相机
+            // mouseX 控制水平旋转 (azimuth)，mouseY 控制垂直倾斜 (polar)
+            const angleOffset = state.mouseX * 0.5;
+            const heightOffset = state.mouseY * 50;
+
+            camera.position.x = Math.sin(time * 0.1 + angleOffset) * currentCamRadius;
+            camera.position.z = Math.cos(time * 0.1 + angleOffset) * currentCamRadius;
+            camera.position.y = 40 + heightOffset - (state.zoomLevel * 40); // 靠近时高度归零，正对核心
+
+            camera.lookAt(0, 0, 0);
+
+            // 3. 屏幕抖动效果 (Camera Shake) 当处于混沌模式
+            if (state.zoomLevel > 0.8) {
+                const shakeIntensity = (state.zoomLevel - 0.8) * 2.0;
+                camera.position.x += (Math.random() - 0.5) * shakeIntensity;
+                camera.position.y += (Math.random() - 0.5) * shakeIntensity;
+                camera.position.z += (Math.random() - 0.5) * shakeIntensity;
+            }
+
+            // 4. 更新 Shader Uniforms
+            if (material) {
+                material.uniforms.uTime.value = time;
+                material.uniforms.uMouse.value.set(state.mouseX, state.mouseY);
+                material.uniforms.uZoom.value = state.zoomLevel;
+            }
+
+            // 5. UI 更新 (根据 Chaos 程度隐藏 UI)
+            const uiOpacity = 1.0 - smoothstep(0.6, 0.9, state.zoomLevel);
+            document.getElementById('ui-layer').style.opacity = uiOpacity;
+
+            renderer.render(scene, camera);
+        }
+
+        // Start
+        init();
+
+    </script>
+</body>
+
+</html>
